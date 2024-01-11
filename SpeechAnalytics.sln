@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34003.232
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpeechAnalytics", "SpeechAnalytics\SpeechAnalytics.csproj", "{A42C16B2-5576-4F06-8AE0-4624430CB34F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{133EA702-672C-4213-82DC-55197845B1A8}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A42C16B2-5576-4F06-8AE0-4624430CB34F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A42C16B2-5576-4F06-8AE0-4624430CB34F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A42C16B2-5576-4F06-8AE0-4624430CB34F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A42C16B2-5576-4F06-8AE0-4624430CB34F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {66A7F4DA-01D1-4836-8BF1-BE7FA341205A}
+	EndGlobalSection
+EndGlobal

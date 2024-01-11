@@ -1,0 +1,26 @@
+﻿name: TranscriptionFollowups
+description: Extracts any follow-up action items mentioned in the transcript text
+template: |
+  <message role="system"> From the provided transcript, determine what follow-up actions were mentioned.
+
+  Format your reponse as:
+
+     Follow-up Actions:
+       - *example1*
+       - *example2*
+       - *example3*
+       - etc.
+
+  </message>
+
+  <message role="user">{{transcription}}</message>
+  <message role="system">Follow-up actions</message>
+template_format: handlebars
+input_variables: 
+ - name: transcription
+   description: Text of the transcribed conversation
+   is_required: true
+execution_settings:
+  default: 
+    max_tokens: 10000
+    temperature: 0.0

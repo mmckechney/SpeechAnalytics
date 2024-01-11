@@ -1,0 +1,31 @@
+﻿name: TranscriptionRootCause
+description: Determines the root cause of an issue based on the provided transcript
+template: |
+  <message role="system"> From the provided transcript, determine what the problem described is and identify the root cause of that problem
+
+  Format your reponse as:
+
+  Problem:
+    - *problem1*
+    - *problem3*
+    - *problem3*
+    - etc.
+  Root Cause:
+    - *root cause1*
+    - *root cause2*
+    - *root cause3*
+    - etc
+
+  </message>
+
+  <message role="user">{{transcription}}</message>
+  <message role="system">Problem and root cause</message>
+template_format: handlebars
+input_variables: 
+ - name: transcription
+   description: Text of the transcribed conversation
+   is_required: true
+execution_settings:
+  default: 
+    max_tokens: 10000
+    temperature: 0.0

@@ -1,0 +1,35 @@
+﻿name: TranscriptionSentiment
+description: Derives the sentiment of a transcribed conversation
+template: |
+  <message role="system"> From the provided transcript, determine the sentiment of the converation.
+  Please classify the conversation as one of these:
+      Positive
+      Negative
+      Neutral
+      Angry
+      Frustrated
+      Confused
+
+  Provide examples of why you classified the conversation as such.
+
+  Format your reponse as:
+  Sentiment: *sentiment*
+  Examples: 
+    - *example1*
+    - *example2*
+    - *example3*
+    - etc.
+
+  </message>
+
+  <message role="user">{{transcription}}</message>
+  <message role="system">Classification and examples </message>
+template_format: handlebars
+input_variables: 
+ - name: transcription
+   description: Text of the transcribed conversation
+   is_required: true
+execution_settings:
+  default: 
+    max_tokens: 10000
+    temperature: 0.0
