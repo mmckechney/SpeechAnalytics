@@ -12,7 +12,6 @@ namespace SpeechAnalytics
    public class Program
    {
 
-      private const string batchRoute = "/speechtotext/v3.1/transcriptions";
       private static AnalyticsSettings settings;
       private static ILoggerFactory logFactory;
       private static SemanticMemory semanticMemory;
@@ -87,7 +86,7 @@ namespace SpeechAnalytics
             Console.WriteLine();
             var selection = Console.ReadLine();
 
-            string transcriptionText;
+            string transcriptionText = string.Empty;
             if (!int.TryParse(selection, out int index))
             {
                log.LogError("Please make a valid selection, number only.");
@@ -96,7 +95,29 @@ namespace SpeechAnalytics
 
             if (index == 1)
             {
-               transcriptionText = await NewFileTranscription();
+               log.LogInformation("Provide the full path to a document to upload and transcribe:", ConsoleColor.Cyan);
+               var path = Console.ReadLine();
+               path = path.Replace("\"", "");
+               if (!File.Exists(path))
+               {
+                  log.LogInformation("File not found.", ConsoleColor.Red);
+                  continue;
+               }
+
+               var finalName = fileHandler.GetTranscriptionFileName(new FileInfo(path));
+               if(files.ContainsValue(finalName))
+               {
+                  log.LogInformation("This file has already been transcribed. Do you want to transcribe it again (y/n)?", ConsoleColor.Yellow);
+                  var overwrite = Console.ReadLine();
+                  if(overwrite.ToLower() == "y")
+                  {
+                     transcriptionText = await NewFileTranscription(path);
+                  }
+                  else
+                  {
+                     transcriptionText = await fileHandler.GetTranscriptionFileText(finalName, settings.Storage.TargetContainerUrl);
+                  }
+               }
             }
             else
             {
@@ -130,23 +151,14 @@ namespace SpeechAnalytics
 
 
             files = await fileHandler.GetTranscriptionList(settings.Storage.TargetContainerUrl);
+            log.LogInformation("----------------------------------------------------------");
             
 
          }
       }
 
-      private static async Task<string> NewFileTranscription()
+      private static async Task<string> NewFileTranscription(string path)
       {
-         log.LogInformation("Provide the full path to a document to upload and transcribe:", ConsoleColor.Cyan);
-         var path = Console.ReadLine();
-         path = path.Replace("\"", "");
-         if (!File.Exists(path))
-         {
-            log.LogInformation("File not found. Please try again.");
-            await NewFileTranscription();
-         }
-
-
          var aiSvcs = settings.AiServices;
          var fileInfo = new FileInfo(path);
          log.LogInformation("");

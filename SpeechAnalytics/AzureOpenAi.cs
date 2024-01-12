@@ -83,9 +83,9 @@ namespace SpeechAnalytics
          sk.Plugins.Add(plugin);
 
 
-     #pragma warning disable SKEXP0004 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-         //sk.FunctionInvoked += Sk_FunctionInvoked;
-         //sk.FunctionInvoking += Sk_FunctionInvoking;
+#pragma warning disable SKEXP0004 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+         sk.FunctionInvoked += Sk_FunctionInvoked;
+         sk.FunctionInvoking += Sk_FunctionInvoking;
 
          return true;
       }

@@ -170,7 +170,7 @@
          }
       }
 
-      private string GetTranscriptionFileName(FileInfo localSourceFile)
+      internal string GetTranscriptionFileName(FileInfo localSourceFile)
       {
          var name = Path.GetFileNameWithoutExtension(localSourceFile.Name);
          return $"{name}_transcription.txt";
