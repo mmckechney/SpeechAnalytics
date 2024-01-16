@@ -25,6 +25,7 @@ param (
     $embeddingModel = "text-embedding-ada-002",
     [string]
     $embeddingDeploymentName = "text-embedding-ada-002"
+ 
 
 )
 $error.Clear()
@@ -40,9 +41,12 @@ Write-Host -ForegroundColor Yellow ($result.properties.outputs | ConvertTo-Json)
 if(!$?){ exit }
 if($null -eq $result) {exit}
 
+
 Write-Host -ForegroundColor Green "Getting translation account account key"
 $aiServicesKey = az cognitiveservices account keys list --resource-group $resourceGroup  --name $aiServicesAcctName -o tsv --query key1
 
+Write-Host -ForegroundColor Green "Getting translation account account key"
+$cosmosConnection = az cosmosdb keys list --name $result.properties.outputs.cosmosAccountName.value --resource-group $resourceGroup --type connection-strings -o tsv --query connectionStrings[0].connectionString
 
  $localsettings = @{
     "AiServices" = @{
@@ -65,6 +69,11 @@ $aiServicesKey = az cognitiveservices account keys list --resource-group $resour
     "AiSearch" = @{
         "Endpoint" = ""
         "Key" = ""
+    }
+    "CosmosDb" = @{
+        "ConnectionString" = $cosmosConnection
+        "ContainerName" = $result.properties.outputs.cosmosContainerName.value
+        "DatabaseName" = $result.properties.outputs.cosmosDataBaseName.value
     }
 
 }

@@ -1,9 +1,11 @@
 ﻿
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Spectre.Console;
 using SpeechAnalytics.Models;
+using System.Text.Json;
 
 
 namespace SpeechAnalytics
@@ -18,6 +20,7 @@ namespace SpeechAnalytics
       private static FileHandling fileHandler;
       private static BatchTranscription batch;
       private static IdentityHelper identityHelper;
+      private static CosmosHelper cosmosHelper;
       private static IConfigurationRoot config;
       private static ILogger log;
       private static SkAi skAi;
@@ -44,7 +47,7 @@ namespace SpeechAnalytics
             builder.AddConsole(options =>
             {
                options.FormatterName = "custom";
-               
+
             });
             builder.AddFilter("Microsoft", LogLevel.Warning);
             builder.AddFilter("System", LogLevel.Warning);
@@ -58,6 +61,8 @@ namespace SpeechAnalytics
          fileHandler = new FileHandling(logFactory.CreateLogger<FileHandling>(), identityHelper);
          batch = new BatchTranscription(logFactory.CreateLogger<BatchTranscription>(), fileHandler);
          skAi = new SkAi(logFactory.CreateLogger<SkAi>(), config, logFactory, settings.AzureOpenAi);
+         cosmosHelper = new CosmosHelper(logFactory.CreateLogger<CosmosHelper>(), settings.CosmosDB);
+
       }
       static async Task Main(string[] args)
       {
@@ -69,7 +74,8 @@ namespace SpeechAnalytics
          Console.ForegroundColor = ConsoleColor.White;
 
          Dictionary<int, string> files;
-         files = await fileHandler.GetTranscriptionList(settings.Storage.TargetContainerUrl);
+         int startIndex = 3;
+         files = await fileHandler.GetTranscriptionList(settings.Storage.TargetContainerUrl, startIndex);
 
 
          while (true)
@@ -77,6 +83,7 @@ namespace SpeechAnalytics
             log.LogInformation("");
             log.LogInformation("Please make a selection:", ConsoleColor.Green);
             log.LogInformation("1. Transcribe a new audio file");
+            log.LogInformation($"2. Transcribe all audio files in container");
             log.LogInformation("");
             if (files.Count > 0) log.LogInformation("or select from a previous transcription:");
             foreach (var file in files)
@@ -86,89 +93,174 @@ namespace SpeechAnalytics
             Console.WriteLine();
             var selection = Console.ReadLine();
 
-            string transcriptionText = string.Empty;
-            if (!int.TryParse(selection, out int index))
+            List<(string source, string transcription)> transcriptions = new();
+            if (!int.TryParse(selection, out int index) || index > files.Keys.Max() || index < 1)
             {
                log.LogError("Please make a valid selection, number only.");
                continue;
             }
 
+            string fileName;
             if (index == 1)
             {
-               log.LogInformation("Provide the full path to a document to upload and transcribe:", ConsoleColor.Cyan);
-               var path = Console.ReadLine();
-               path = path.Replace("\"", "");
-               if (!File.Exists(path))
+               transcriptions = await SingleFileTranscription(files);
+               if(transcriptions == null || transcriptions.Count == 0)
                {
-                  log.LogInformation("File not found.", ConsoleColor.Red);
                   continue;
                }
 
-               var finalName = fileHandler.GetTranscriptionFileName(new FileInfo(path));
-               if(files.ContainsValue(finalName))
+            }
+            else if (index == 2)
+            {
+               transcriptions = await NewTranscriptions(null);
+               if (transcriptions == null || transcriptions.Count == 0)
                {
-                  log.LogInformation("This file has already been transcribed. Do you want to transcribe it again (y/n)?", ConsoleColor.Yellow);
-                  var overwrite = Console.ReadLine();
-                  if(overwrite.ToLower() == "y")
-                  {
-                     transcriptionText = await NewFileTranscription(path);
-                  }
-                  else
-                  {
-                     transcriptionText = await fileHandler.GetTranscriptionFileText(finalName, settings.Storage.TargetContainerUrl);
-                  }
+                  continue;
                }
             }
             else
             {
-               string fileName = files[index];
-               transcriptionText = await fileHandler.GetTranscriptionFileText(fileName, settings.Storage.TargetContainerUrl);
+               fileName = files[index];
+               transcriptions.Add(await fileHandler.GetTranscriptionFileText(fileName, settings.Storage.TargetContainerUrl));
             }
 
-            if (string.IsNullOrWhiteSpace(transcriptionText))
+            if (transcriptions.Count == 0 || transcriptions[0].transcription.Length == 0)
             {
                log.LogWarning("No transcription text found. Please make another selection", ConsoleColor.Magenta);
                continue;
             }
 
-            log.LogInformation("Analyzing transcript for sentiment...");
-            log.LogInformation("");
+            var reask = true;
+            var rerun = true;
+            foreach (var transcription in transcriptions)
+            {
 
-            string sentiment = await skAi.GetSentimentFromTranscription(transcriptionText);
-            log.LogInformation(sentiment, ConsoleColor.DarkCyan);
+               var insightObj = await cosmosHelper.GetAnalysis(transcription.source);
+               if (insightObj != null && reask == true)
+               {
+                  if (transcriptions.Count == 1)
+                  {
+                     log.LogInformation("Analysis of this transcript has already been performed. Do you want to analyze it again (y/n)?", ConsoleColor.Yellow);
+                  }
+                  else
+                  {
+                     log.LogInformation("Analysis of this transcript has already been performed. Do you want to analyze it again (y/n) or (ya/na - yes for all/no for all)?", ConsoleColor.Yellow);
+                  }
+                  var input = Console.ReadLine();
+                  if (input.ToLower().StartsWith("ya"))
+                  {
+                     rerun = true;
+                     reask = false;
+                  }
+                  else if (input.ToLower().StartsWith("na"))
+                  {
+                     rerun = false;
+                     reask = false;
+                  }
+                  else if (input.ToLower().StartsWith("y"))
+                  {
+                     rerun = true;
+                  }
+                  else
+                  {
+                     rerun = false;
+                  }
+               }
 
-            log.LogInformation("");
-            log.LogInformation("Analyzing transcript for action items...");
-            log.LogInformation("");
-            string actions = await skAi.GetFollowUpActionItems(transcriptionText);
-            log.LogInformation($"Action Items:{Environment.NewLine}{actions}", ConsoleColor.Cyan);
+               if (rerun)
+               {
+                  log.LogInformation("");
+                  log.LogInformation("");
+                  log.LogInformation($"Analyzing transcript {transcription.source} for sentiment...");
+                  log.LogInformation("");
 
-            log.LogInformation("");
-            log.LogInformation("Analyzing transcript problem root cause...");
-            log.LogInformation("");
-            string root = await skAi.GetProblemRootCause(transcriptionText);
-            log.LogInformation($"Problem Statement and Root Cause:{Environment.NewLine}{root}", ConsoleColor.DarkCyan);
+                  string insights = await skAi.GetTranscriptionInsights(transcription.transcription, transcription.source);
+                  if (string.IsNullOrWhiteSpace(insights))
+                  {
+                     log.LogError("Failed to get insights from Azure OpenAI");
+                     continue;
+                  }
+                  log.LogDebug($"{insights.ExtractJson()}", ConsoleColor.DarkCyan);
+                  insightObj = JsonSerializer.Deserialize<InsightResults>(insights.ExtractJson());
+
+                  bool saved = await cosmosHelper.SaveAnalysis(insightObj);
+                  if (saved)
+                  {
+                     log.LogInformation("Saved analysis to CosmosDB", ConsoleColor.Green);
+                  }
+                  else
+                  {
+                     log.LogWarning("Failed to save analyis to CosmosDB", ConsoleColor.Red);
+                  }
+               }
+
+               log.LogInformation("");
+               log.LogInformation("");
+               log.LogInformation($"Analysis for: {insightObj.CallId}", ConsoleColor.DarkCyan);
+               log.LogInformation("Setiment:", ConsoleColor.Cyan);
+               log.LogInformation($"  - " + insightObj.Sentiment);
+               log.LogInformation("Setiment Examples:", ConsoleColor.Cyan);
+               log.LogInformation($"  - " + string.Join($"{Environment.NewLine}  - ", insightObj.SentimentExamples));
+               log.LogInformation("Action Items:", ConsoleColor.Cyan);
+               log.LogInformation($"  - " + string.Join($"{Environment.NewLine}  - ", insightObj.FollowUpActions));
+               log.LogInformation("Problem Statement/Root Cause", ConsoleColor.Cyan);
+               log.LogInformation($"  - " + insightObj.RootCause);
+            }
 
 
-            files = await fileHandler.GetTranscriptionList(settings.Storage.TargetContainerUrl);
+            files = await fileHandler.GetTranscriptionList(settings.Storage.TargetContainerUrl, startIndex);
             log.LogInformation("----------------------------------------------------------");
-            
-
          }
+         
       }
 
-      private static async Task<string> NewFileTranscription(string path)
+      private static async Task<List<(string source, string transcription)>> SingleFileTranscription(Dictionary<int,string> existingFiles)
       {
+         List<(string source, string transcription)> transcriptions = new();
+         log.LogInformation("Provide the full path to a document to upload and transcribe:", ConsoleColor.Cyan);
+         var path = Console.ReadLine();
+         path = path.Replace("\"", "");
+         if (!File.Exists(path))
+         {
+            log.LogInformation("File not found.", ConsoleColor.Red);
+            return transcriptions;
+         }
+
+         var fileName = fileHandler.GetTranscriptionFileName(new FileInfo(path));
+         if (existingFiles.ContainsValue(fileName))
+         {
+            log.LogInformation("This file has already been transcribed. Do you want to transcribe it again (y/n)?", ConsoleColor.Yellow);
+            var overwrite = Console.ReadLine();
+            if (overwrite.ToLower() == "y")
+            {
+               transcriptions = await NewTranscriptions(path);
+            }
+            else
+            {
+               transcriptions.Add(await fileHandler.GetTranscriptionFileText(fileName, settings.Storage.TargetContainerUrl));
+            }
+         }
+
+         return transcriptions;
+      }
+
+      private static async Task<List<(string source, string transcription)>> NewTranscriptions(string? path)
+      {
+         List<(string source, string transcription)> transcriptions = null;
          var aiSvcs = settings.AiServices;
-         var fileInfo = new FileInfo(path);
+         FileInfo fileInfo = null;
+         if (!string.IsNullOrWhiteSpace(path))
+         {
+            fileInfo = new FileInfo(path);
+         }
          log.LogInformation("");
-         var initialResponse = await batch.StartBatchTranscription(fileInfo, aiSvcs.Endpoint, aiSvcs.Key, settings.Storage.SourceContainerUrl);
+         var initialResponse = await batch.StartBatchTranscription(aiSvcs.Endpoint, aiSvcs.Key, settings.Storage.SourceContainerUrl, fileInfo);
 
          TranscriptionResponse? statusResponse = null;
          if (initialResponse != null)
          {
             log.LogDebug($"Path to Transcription Job: {initialResponse.Self}");
-            statusResponse = await batch.CheckTranscriptionStatus(fileInfo, initialResponse.Self, aiSvcs.Key);
+            statusResponse = await batch.CheckTranscriptionStatus(initialResponse.Self, aiSvcs.Key);
          }
 
          List<string>? translationLinks = null;
@@ -176,20 +268,24 @@ namespace SpeechAnalytics
          {
             log.LogDebug($"Path to Transcription Files List: ${statusResponse.Links.Files}");
             translationLinks = await batch.GetTranslationOutputLinks(statusResponse.Links.Files, aiSvcs.Key);
-         }else
+         }
+         else
          {
             log.LogError("Failed to transcribe files");
-            return "";
+            return transcriptions;
          }
 
-         string transcriptionText = null;
+
          if (translationLinks != null)
          {
             log.LogDebug($"Transcription File Links: {string.Join(Environment.NewLine, translationLinks.ToArray())}");
             log.LogInformation("");
-            transcriptionText = await batch.GetTranscriptionText(translationLinks);
-            await fileHandler.SaveTranscriptionFile(fileInfo, transcriptionText, settings.Storage.TargetContainerUrl);
-            log.LogDebug($"Transcription Text:{Environment.NewLine}{transcriptionText}");
+            transcriptions = await batch.GetTranscriptionText(translationLinks);
+            foreach (var transcription in transcriptions)
+            {
+               await fileHandler.SaveTranscriptionFile(transcription.source, transcription.transcription, settings.Storage.TargetContainerUrl);
+               log.LogDebug($"Transcription for {transcription.source}:{Environment.NewLine}{transcription.transcription}");
+            }
          }
          log.LogInformation("Complete");
 
@@ -199,8 +295,9 @@ namespace SpeechAnalytics
          //   await semanticMemory.StoreMemoryAsync(fileInfo.Name, fileInfo.Name, transcriptionText);
 
          //}
-         return transcriptionText;
+         return transcriptions;
       }
+   
 
 
       private static LogLevel SetLogLevel(string[] args)
@@ -218,3 +315,4 @@ namespace SpeechAnalytics
       }
    }
 }
+

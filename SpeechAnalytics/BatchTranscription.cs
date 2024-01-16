@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using SpeechAnalytics.Models;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -20,18 +21,22 @@ namespace SpeechAnalytics
          this.fileHandler = fileHandler;
       }
       private static HttpClient client = new HttpClient();
-      public async Task<TranscriptionResponse?> StartBatchTranscription(FileInfo localFile, string transcriptionEndpoint, string transcriptionKey, string sourceSas)
+      public async Task<TranscriptionResponse?> StartBatchTranscription(string transcriptionEndpoint, string transcriptionKey, string sourceSas, FileInfo? localFile = null)
       {
-
-         string fileUri = await fileHandler.UploadBlobForTranscription(localFile, sourceSas);
-
-
          var transcript = new TranscriptionRequest()
          {
-            DisplayName = Guid.NewGuid().ToString(),
-            ContentUrls = new List<string>() { fileUri }
-
+            DisplayName = Guid.NewGuid().ToString()
          };
+         if (localFile != null)
+         {
+            string fileUri = await fileHandler.UploadBlobForTranscription(localFile, sourceSas);
+            transcript.ContentUrls = new List<string>() { fileUri };
+
+         }
+         else
+         {
+            transcript.ContentContainerUrl = sourceSas;
+         }
          var transcrReqJson = JsonSerializer.Serialize<TranscriptionRequest>(transcript, new JsonSerializerOptions() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
 
          logger.LogDebug(transcrReqJson);
@@ -63,9 +68,7 @@ namespace SpeechAnalytics
          }
          return null;
       }
-
-
-      public async Task<TranscriptionResponse?> CheckTranscriptionStatus(FileInfo localSourceFile, string operationUrl, string transcriptionKey)
+      public async Task<TranscriptionResponse?> CheckTranscriptionStatus(string operationUrl, string transcriptionKey)
       {
          int sleepTime = 4000;
          logger.LogInformation("Checking status of document translation:");
@@ -129,10 +132,10 @@ namespace SpeechAnalytics
             Thread.Sleep(sleepTime);
          }
       }
-
-      public async Task<string>? GetTranscriptionText(List<string> translationSasUrls)
+      public async Task<List<(string source, string transcription)>>? GetTranscriptionText(List<string> translationSasUrls)
       {
          var sb = new StringBuilder();
+         List<(string source, string transcription)>transcriptions = new();
          try
          {
             foreach (var translationSasUrl in translationSasUrls)
@@ -147,7 +150,8 @@ namespace SpeechAnalytics
                   if (response.IsSuccessStatusCode)
                   {
                      var output = JsonSerializer.Deserialize<TranscriptionOutput>(result);
-                     sb.AppendLine(output.TranscriptionText);
+                     var tmpSource = fileHandler.GetTranscriptionFileName(new Uri(output.Source).LocalPath);
+                     transcriptions.Add((tmpSource, output.TranscriptionText));
                   }
                   else
                   {
@@ -156,12 +160,12 @@ namespace SpeechAnalytics
                    }
                }
             }
-            return sb.ToString();
+            return transcriptions;
          }
          catch (Exception exe)
          {
             logger.LogError($"Error: {exe.Message}");
-            return string.Empty;
+            return transcriptions;
          }
 
       }
@@ -197,11 +201,6 @@ namespace SpeechAnalytics
             logger.LogError($"Error: {exe.Message}");
             return null;
          }
-      }
-      private string GetTranscriptionFileName(FileInfo localSourceFile)
-      {
-         var name = Path.GetFileNameWithoutExtension(localSourceFile.Name);
-         return Path.Combine(localSourceFile.Directory.FullName, $"{name}_transcription.txt");
       }
    }
 }

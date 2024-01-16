@@ -49,13 +49,13 @@
          }
       }
 
-      public async Task<string> SaveTranscriptionFile(FileInfo sourceFile,string transcriptionText,  string targetContainerUrl)
+      public async Task<string> SaveTranscriptionFile(string sourceFileName,string transcriptionText,  string targetContainerUrl)
       {
          try
          {
             BlobContainerClient containerClient = GetContainerClient(targetContainerUrl);
 
-            var fileName = GetTranscriptionFileName(sourceFile);
+            var fileName = GetTranscriptionFileName(sourceFileName);
             //upload the file to blob storage using the sourceURL SAS token
             var blobClient = containerClient.GetBlobClient(fileName);
             using (MemoryStream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(transcriptionText)))
@@ -64,7 +64,7 @@
 
                if (result.GetRawResponse().Status == 201)
                {
-                 log.LogInformation("File uploaded successfully");
+                 log.LogInformation($"File {fileName} uploaded successfully");
                   // DeletePreExistingFile(file, targetSasUrl);
                   return blobClient.Uri.AbsoluteUri.ToString();
                }
@@ -82,11 +82,11 @@
          }
       }
 
-      public async Task<Dictionary<int, string>> GetTranscriptionList(string containerUrl)
+      public async Task<Dictionary<int, string>> GetTranscriptionList(string containerUrl, int startIndex)
       {
 
          Dictionary<int, string> files = new();
-         int counter = 2;
+         int counter = startIndex;
          var containerClient = GetContainerClient(containerUrl);
          var iterator = containerClient.GetBlobsAsync().GetAsyncEnumerator();
          while (await iterator.MoveNextAsync())
@@ -97,7 +97,7 @@
          return files;
       }
 
-      public async Task<string> GetTranscriptionFileText(string filename, string containerUrl)
+      public async Task<(string source, string transcription)> GetTranscriptionFileText(string filename, string containerUrl)
       {
          try
          {
@@ -107,13 +107,13 @@
             {
                await blobClient.DownloadToAsync(memory);
                string content = System.Text.Encoding.UTF8.GetString(memory.ToArray());
-               return content;
+               return (filename, content);
             }
          }
          catch(Exception exe)
          {
             log.LogError($"Error: {exe.Message}");
-            return "";
+            return ("", "");
          }
          
       }
@@ -173,7 +173,13 @@
       internal string GetTranscriptionFileName(FileInfo localSourceFile)
       {
          var name = Path.GetFileNameWithoutExtension(localSourceFile.Name);
-         return $"{name}_transcription.txt";
+         return $"{name}.txt";
+      }
+
+      internal string GetTranscriptionFileName(string localSourceFile)
+      {
+         var name = Path.GetFileNameWithoutExtension(localSourceFile);
+         return $"{name}.txt";
       }
    }
 }

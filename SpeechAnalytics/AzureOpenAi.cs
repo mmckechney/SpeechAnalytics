@@ -100,27 +100,20 @@ namespace SpeechAnalytics
          log.LogDebug($"{Environment.NewLine}INVOKED :{e.Function.Name}{Environment.NewLine}Arguments:{Environment.NewLine}{string.Join(Environment.NewLine, e.Arguments.Select(a => a.Key + ":" + a.Value.ToString()))}{Environment.NewLine}Result:{e.Result}");
       }
 #pragma warning restore SKEXP0004 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-      public async Task<string> GetSentimentFromTranscription(string transcription)
+
+      internal async Task<string> GetTranscriptionInsights(string transcription, string callid)
       {
+         try
+         {
+            var result = await this.sk.InvokeAsync(yamlPrompts["Transcription_Insights"], new() { { "transcription", transcription }, { "callid", callid } });
+            return result.GetValue<string>();
+         }
+         catch (Exception exe)
+         {
 
-         var result = await this.sk.InvokeAsync(yamlPrompts["Transcription_Sentiment"], new() { { "transcription", transcription } });
-         return result.GetValue<string>();
-
-      }
-
-      public async Task<string> GetFollowUpActionItems(string transcription)
-      {
-
-         var result = await this.sk.InvokeAsync(yamlPrompts["Transcription_FollowUps"], new() { { "transcription", transcription } });
-         return result.GetValue<string>();
-
-      }
-
-      internal async Task<string> GetProblemRootCause(string transcription)
-      {
-         var result = await this.sk.InvokeAsync(yamlPrompts["Transcription_RootCause"], new() { { "transcription", transcription } });
-         return result.GetValue<string>();
-
+            log.LogError($"Error getting insights: {exe.Message}");
+            return "";
+         }
       }
    }
 }

@@ -12,6 +12,7 @@ namespace SpeechAnalytics.Models
       public AiSearch AiSearch { get; set; }
       public Storage Storage { get; set; }
       public AzureOpenAi AzureOpenAi { get; set; }
+      public CosmosDB CosmosDB { get; set; }
    }
 
    public class AiSearch
@@ -41,5 +42,12 @@ namespace SpeechAnalytics.Models
       public string EmbeddingModel { get; set; }
       public string EmbeddingDeploymentName { get; set; }
    }
+   public class CosmosDB
+   {
+      public string ConnectionString { get; set; }
+      public string ContainerName { get; set; }
+      public string DatabaseName { get; set; }
+   }
+
 
 }

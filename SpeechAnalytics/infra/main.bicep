@@ -51,7 +51,26 @@ module roleassignment 'roleassignment.bicep' = {
     ]
 }
 
+module cosmosDB 'cosmos.bicep' = {
+    scope: resourceGroup(resourceGroupName)
+    name: 'cosmos'
+    params: {
+        location: location
+        cosmosAccountName: 'speechanalyticsacct'
+        cosmosContainerName: 'analyticscontainer'
+        cosmosDataBaseName: 'speechanalyticsdb'
+    }
+    dependsOn: [
+        rg
+    ]
+}
+
 output aiServicesEndpoint string = aiServices.outputs.endpoint
 output location string = aiServices.outputs.location
 output transcriptfile_url string = storage.outputs.transcription_url
 output audiofile_url string = storage.outputs.audiofile_url
+output cosmosEndpoint string = cosmosDB.outputs.cosmosAccountEndpoint
+output cosmosAccountName string = cosmosDB.outputs.cosmosAccountName
+output cosmosContainerName string = cosmosDB.outputs.cosmosContainerName
+output cosmosDataBaseName string = cosmosDB.outputs.cosmosDataBaseName
+
