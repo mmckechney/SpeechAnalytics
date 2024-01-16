@@ -23,7 +23,7 @@ az login
 When you run the app for the first time, select the `1` option to analyze a new call audio file.\
 You will be prompted to enter the path to the audio file. The app will then upload the file to Blob storage and start the analysis process.
 
-Alternatively, you can select the `2` option to transcribe and analyize all of the audio files in the Blob storage container.
+Alternatively, you can select the `2` option to transcribe and analyze all of the audio files in the Blob storage container.
 
 <img src="images/first_run.png">
 
