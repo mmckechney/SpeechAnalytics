@@ -25,7 +25,7 @@ You will be prompted to enter the path to the audio file. The app will then uplo
 
 Alternatively, you can select the `2` option to transcribe and analyize all of the audio files in the Blob storage container.
 
-<img src="images/first_run.png" width="40%">
+<img src="images/first_run.png">
 
 The app will:
 1. Upload the audio file to Blob storage (only for option 1)
@@ -42,6 +42,6 @@ As each step is complete, the app will display the results in the console.
 
 Upon running again, the app will locate any prior transcription results and prompt you to use those or upload a new file.
 
-<img src="images/subsequent_run.png" width="40%">
+<img src="images/subsequent_run.png">
 
 
