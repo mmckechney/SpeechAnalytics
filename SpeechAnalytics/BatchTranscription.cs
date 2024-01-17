@@ -1,6 +1,6 @@
 ﻿using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Logging;
-using SpeechAnalytics.Models;
+using mo = SpeechAnalytics.Models;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -8,6 +8,10 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Web;
+using SpeechAnalytics.Models.SpeechToText.API;
+using SpeechAnalytics.Models.SpeechToText;
+using SpeechAnalytics.Models;
+
 
 namespace SpeechAnalytics
 {
@@ -15,29 +19,64 @@ namespace SpeechAnalytics
    {
       ILogger<BatchTranscription> logger;
       FileHandling fileHandler;
-      public BatchTranscription(ILogger<BatchTranscription> logger, FileHandling fileHandler)
+      SkAi skAi;
+      AiServices settings;
+      public BatchTranscription(ILogger<BatchTranscription> logger, FileHandling fileHandler, SkAi skAi, AiServices settings) 
       {
          this.logger = logger;
          this.fileHandler = fileHandler;
+         this.skAi = skAi;
+         this.settings = settings;
       }
       private static HttpClient client = new HttpClient();
-      public async Task<TranscriptionResponse?> StartBatchTranscription(string transcriptionEndpoint, string transcriptionKey, string sourceSas, FileInfo? localFile = null)
+      public async Task<mo.TranscriptionResponse?> StartBatchTranscription(string transcriptionEndpoint, string transcriptionKey, string sourceSas, string destinationSas, FileInfo? localFile = null)
       {
-         var transcript = new TranscriptionRequest()
+         var whisperUrl = await GetWhisperModel(transcriptionEndpoint, transcriptionKey);
+
+         var transcriptionReq = new SpeechAnalytics.Models.SpeechToText.API.Transcription()
          {
-            DisplayName = Guid.NewGuid().ToString()
+            DisplayName = Guid.NewGuid().ToString(),
+            Locale = "en-US",
+             Model = new SpeechAnalytics.Models.SpeechToText.API.EntityReference()
+            {
+               Self = new Uri(whisperUrl)
+            },    
+            Properties = new SpeechAnalytics.Models.SpeechToText.API.TranscriptionProperties()
+            {
+               TimeToLive = "PT4H",
+               PunctuationMode = Models.SpeechToText.API.PunctuationMode.DictatedAndAutomatic,
+               ProfanityFilterMode = Models.SpeechToText.API.ProfanityFilterMode.Masked,
+               LanguageIdentification = new Models.SpeechToText.API.LanguageIdentificationProperties()
+               {
+                  CandidateLocales = new List<string>() { "en-US", "es-ES" }
+               },
+               DiarizationEnabled = true,
+               Diarization = new Models.SpeechToText.API.DiarizationProperties()
+               {
+                  Speakers = new Models.SpeechToText.API.DiarizationSpeakersProperties()
+                  {
+                     MinCount = 1,
+                     MaxCount = 10
+                  }
+
+
+               }
+               
+            }
          };
+
          if (localFile != null)
          {
             string fileUri = await fileHandler.UploadBlobForTranscription(localFile, sourceSas);
-            transcript.ContentUrls = new List<string>() { fileUri };
+            transcriptionReq.ContentUrls = new List<Uri>() { new Uri(fileUri) };
 
          }
          else
          {
-            transcript.ContentContainerUrl = sourceSas;
+            transcriptionReq.ContentContainerUrl = new Uri(sourceSas);
          }
-         var transcrReqJson = JsonSerializer.Serialize<TranscriptionRequest>(transcript, new JsonSerializerOptions() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+
+         var transcrReqJson = JsonSerializer.Serialize<Transcription>(transcriptionReq, new JsonSerializerOptions() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
 
          logger.LogDebug(transcrReqJson);
          var createTime = DateTime.UtcNow;
@@ -47,7 +86,7 @@ namespace SpeechAnalytics
             StringContent requestContent = new StringContent(transcrReqJson, Encoding.UTF8, "application/json");
 
             request.Method = HttpMethod.Post;
-            request.RequestUri = new Uri(transcriptionEndpoint + "/speechtotext/v3.1/transcriptions");
+            request.RequestUri = new Uri($"{transcriptionEndpoint}/speechtotext/{settings.ApiVersion}/transcriptions");
             request.Headers.Add("Ocp-Apim-Subscription-Key", transcriptionKey);
             request.Content = requestContent;
 
@@ -55,7 +94,7 @@ namespace SpeechAnalytics
             string result = response.Content.ReadAsStringAsync().Result;
             if (response.IsSuccessStatusCode)
             {
-               var transcrResponse = JsonSerializer.Deserialize<TranscriptionResponse>(result);
+               var transcrResponse = JsonSerializer.Deserialize<mo.TranscriptionResponse>(result);
                logger.LogInformation("Transcription accepted");
                return transcrResponse;
             }
@@ -68,7 +107,7 @@ namespace SpeechAnalytics
          }
          return null;
       }
-      public async Task<TranscriptionResponse?> CheckTranscriptionStatus(string operationUrl, string transcriptionKey)
+      public async Task<mo.TranscriptionResponse?> CheckTranscriptionStatus(string operationUrl, string transcriptionKey)
       {
          int sleepTime = 4000;
          logger.LogInformation("Checking status of document translation:");
@@ -85,10 +124,10 @@ namespace SpeechAnalytics
                string result = response.Content.ReadAsStringAsync().Result;
                if (response.IsSuccessStatusCode)
                {
-                  TranscriptionResponse resObj = null;
+                  mo.TranscriptionResponse resObj = null;
                   try
                   {
-                     resObj = JsonSerializer.Deserialize<TranscriptionResponse>(result);
+                     resObj = JsonSerializer.Deserialize<mo.TranscriptionResponse>(result);
                   }
                   catch (Exception)
                   {
@@ -135,10 +174,10 @@ namespace SpeechAnalytics
       public async Task<List<(string source, string transcription)>>? GetTranscriptionText(List<string> translationSasUrls)
       {
          var sb = new StringBuilder();
-         List<(string source, string transcription)>transcriptions = new();
-         try
+         List<(string source, string transcription)> transcriptions = new();
+         foreach (var translationSasUrl in translationSasUrls)
          {
-            foreach (var translationSasUrl in translationSasUrls)
+            try
             {
                using HttpRequestMessage request = new HttpRequestMessage();
                {
@@ -149,25 +188,41 @@ namespace SpeechAnalytics
                   string result = response.Content.ReadAsStringAsync().Result;
                   if (response.IsSuccessStatusCode)
                   {
-                     var output = JsonSerializer.Deserialize<TranscriptionOutput>(result);
+                     logger.LogTrace(result);
+                     var output = JsonSerializer.Deserialize<mo.TranscriptionOutput>(result);
                      var tmpSource = fileHandler.GetTranscriptionFileName(new Uri(output.Source).LocalPath);
-                     transcriptions.Add((tmpSource, output.TranscriptionText));
+                     logger.LogTrace($"Raw Transcription: {output.RawTranscriptionText}", ConsoleColor.DarkBlue);
+
+                     logger.LogInformation("Attempting to identify speakers by name");
+                     var speakers = await skAi.GetSpeakerNames(tmpSource, output.SpeakerTranscriptionText);
+                     if (speakers != null)
+                     { 
+                        var tmp = output.SpeakerTranscriptionText;
+                        foreach (var item in speakers)
+                        {
+                           tmp = tmp.Replace(item.Key, item.Value);
+                        }
+                        transcriptions.Add((tmpSource, tmp));
+                     }
+                     else
+                     {
+                        transcriptions.Add((tmpSource, output.SpeakerTranscriptionText));
+                     }
                   }
                   else
                   {
                      logger.LogError($"Status code: {response.StatusCode}");
                      logger.LogError(result);
-                   }
+                  }
                }
             }
-            return transcriptions;
-         }
-         catch (Exception exe)
-         {
-            logger.LogError($"Error: {exe.Message}");
-            return transcriptions;
+            catch (Exception exe)
+            {
+               logger.LogError($"Error: {exe.Message}");
+            }
          }
 
+        return transcriptions;
       }
       public async Task<List<string>?> GetTranslationOutputLinks(string filesUrl, string transcriptionKey)
       {
@@ -184,7 +239,7 @@ namespace SpeechAnalytics
                if (response.IsSuccessStatusCode)
                {
                   var sb = new StringBuilder();
-                  var links = JsonSerializer.Deserialize<TranscriptionLinks>(result);
+                  var links = JsonSerializer.Deserialize<mo.TranscriptionLinks>(result);
                   var contentSasUrls = links.Values.Where(x => x.Kind == "Transcription").Select(x => x.Links.ContentUrl).ToList();
                   return contentSasUrls;
                }               
@@ -200,6 +255,50 @@ namespace SpeechAnalytics
          {
             logger.LogError($"Error: {exe.Message}");
             return null;
+         }
+      }
+
+      public async Task<string> GetWhisperModel(string operationUrl, string transcriptionKey, string url = "")
+      {
+         try
+         {
+            using HttpRequestMessage request = new HttpRequestMessage();
+            {
+               request.Method = HttpMethod.Get;
+               if (string.IsNullOrWhiteSpace(url))
+               {
+                  request.RequestUri = new Uri($"{operationUrl}/speechtotext/{settings.ApiVersion}/models/base"); 
+               }
+               else
+               {
+                  request.RequestUri = new Uri(url);
+               }
+               request.Headers.Add("Ocp-Apim-Subscription-Key", transcriptionKey);
+
+               HttpResponseMessage response = await client.SendAsync(request);
+               string result = response.Content.ReadAsStringAsync().Result;
+               if (response.IsSuccessStatusCode)
+               {
+                  var models = JsonSerializer.Deserialize<SpeechModels>(result);
+                  var whisper =  models.Values.Where(models => models.DisplayName.Contains("Whisper")).OrderBy(m => m.LastActionDateTime).FirstOrDefault();
+                  if(whisper == null)
+                  {
+                     return await GetWhisperModel(operationUrl,transcriptionKey, models.NextLink);
+                  }
+                  return whisper.Self;
+               }
+               else
+               {
+                  logger.LogInformation($"Status code: {response.StatusCode}");
+                  logger.LogError(result);
+                  return string.Empty;
+               }
+            }
+         }
+         catch (Exception exe)
+         {
+            logger.LogError($"Error: {exe.Message}");
+            return string.Empty;
          }
       }
    }

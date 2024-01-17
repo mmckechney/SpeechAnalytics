@@ -8,49 +8,29 @@
    </PropertyGroup>
 
    <ItemGroup>
-      <Compile Remove="BreakSentence.cs" />
-      <Compile Remove="Detect.cs" />
-      <Compile Remove="DictionaryExamples.cs" />
-      <Compile Remove="DictionaryLookup.cs" />
-      <Compile Remove="Languages.cs" />
-      <Compile Remove="Models\Alignment.cs" />
-      <Compile Remove="Models\DetectedLanguage.cs" />
-      <Compile Remove="Models\DocumentRequest.cs" />
-      <Compile Remove="Models\DocumentResult.cs" />
-      <Compile Remove="Models\SentenceLength.cs" />
-      <Compile Remove="Models\TextResult.cs" />
-      <Compile Remove="Models\Translation.cs" />
-      <Compile Remove="Models\TranslationResult.cs" />
-      <Compile Remove="Models\TransliterationOptions.cs" />
-      <Compile Remove="Models\TransliterationResult.cs" />
-      <Compile Remove="TextTranslation.cs" />
-      <Compile Remove="Translate.cs" />
-      <Compile Remove="Transliterate.cs" />
-   </ItemGroup>
-
-   <ItemGroup>
       <PackageReference Include="Azure.Identity" Version="1.10.4" />
       <PackageReference Include="Azure.Storage.Blobs" Version="12.19.1" />
       <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.37.1" />
+      <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.34.1" />
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.1" />
       <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
-      <PackageReference Include="Microsoft.SemanticKernel" Version="1.0.1" />
-      <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.0.1" />
-      <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.0.1" />
-      <PackageReference Include="Microsoft.SemanticKernel.Core" Version="1.0.1" />
-      <PackageReference Include="Microsoft.SemanticKernel.Planners.OpenAI" Version="1.0.1-preview" />
-      <PackageReference Include="Microsoft.SemanticKernel.Plugins.Core" Version="1.0.1-alpha" />
-      <PackageReference Include="Microsoft.SemanticKernel.Plugins.Document" Version="1.0.1-alpha" />
-      <PackageReference Include="Microsoft.SemanticKernel.Plugins.Memory" Version="1.0.1-alpha" />
-      <PackageReference Include="Microsoft.SemanticKernel.Plugins.MsGraph" Version="1.0.1-alpha" />
-      <PackageReference Include="Microsoft.SemanticKernel.Plugins.Web" Version="1.0.1-alpha" />
-      <PackageReference Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" Version="1.0.1" />
-      <PackageReference Include="Microsoft.SemanticKernel.Planners.Handlebars" Version="1.0.1-preview" />
-      <PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureAISearch" Version="1.0.1-alpha" />
+      <PackageReference Include="Microsoft.SemanticKernel" Version="1.1.0" />
+      <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.1.0" />
+      <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.1.0" />
+      <PackageReference Include="Microsoft.SemanticKernel.Core" Version="1.1.0" />
+      <PackageReference Include="Microsoft.SemanticKernel.Planners.OpenAI" Version="1.1.0-preview" />
+      <PackageReference Include="Microsoft.SemanticKernel.Plugins.Core" Version="1.1.0-alpha" />
+      <PackageReference Include="Microsoft.SemanticKernel.Plugins.Document" Version="1.1.0-alpha" />
+      <PackageReference Include="Microsoft.SemanticKernel.Plugins.Memory" Version="1.1.0-alpha" />
+      <PackageReference Include="Microsoft.SemanticKernel.Plugins.MsGraph" Version="1.1.0-alpha" />
+      <PackageReference Include="Microsoft.SemanticKernel.Plugins.Web" Version="1.1.0-alpha" />
+      <PackageReference Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" Version="1.1.0" />
+      <PackageReference Include="Microsoft.SemanticKernel.Planners.Handlebars" Version="1.1.0-preview" />
+      <PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureAISearch" Version="1.1.0-alpha" />
       <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.12" />
 
       <PackageReference Include="Spectre.Console" Version="0.48.0" />
@@ -75,6 +55,7 @@
 
    <ItemGroup>
      <None Remove="Prompts\Transcription.Insights.yaml" />
+     <None Remove="Prompts\Transcription.SpeakerId.yaml" />
    </ItemGroup>
 
 </Project>

@@ -1,5 +1,5 @@
 ﻿name: TranscriptionInsights
-description: Extracts any follow-up action items mentioned in the transcript text
+description: Extracts sentiment, follow-up action items and root cause problems mentioned in the transcript text
 template: |
   <message role="system"> You are a customer service representative. You were are on a call with a customer. The customer was talking about a problem they are having. This is the transcription of your call and you need to create notes and insights.
    As part of your notes, you need to:

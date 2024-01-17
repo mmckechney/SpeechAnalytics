@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace SpeechAnalytics.Models
 {
+   using SpeechAnalytics.Models.SpeechToText.API;
    using System;
    using System.Collections.Generic;
    using System.Text.Json;
@@ -96,7 +97,7 @@ namespace SpeechAnalytics.Models
       public Diarization Diarization { get; set; }
 
       [JsonPropertyName("languageIdentification")]
-      public RequestLanguageIdentification LanguageIdentification { get; set; }
+      public LanguageIdentificationProperties LanguageIdentification { get; set; }
 
       [JsonPropertyName("email")]
       public string Email { get; set; }

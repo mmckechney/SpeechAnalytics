@@ -97,7 +97,7 @@
          return files;
       }
 
-      public async Task<(string source, string transcription)> GetTranscriptionFileText(string filename, string containerUrl)
+      public async Task<(string source, string transcription)> GetTranscriptionFileTextFromBlob(string filename, string containerUrl)
       {
          try
          {

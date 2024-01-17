@@ -25,6 +25,9 @@ namespace SpeechAnalytics.Models
    {
       public string Endpoint { get; set; }
       public string Key { get; set; }
+
+      public string Region { get; set; }
+      public string ApiVersion { get; set; } = "v3.2-preview.1";
    }
 
    public class Storage

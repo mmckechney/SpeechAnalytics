@@ -15,6 +15,7 @@ namespace SpeechAnalytics.Models
       public string[] SentimentExamples { get; set; }
       public string[] FollowUpActions { get; set; }
       public string RootCause { get; set; }
+      public string TranscriptText { get; set; }
    }
    
 }

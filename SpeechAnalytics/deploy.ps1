@@ -52,6 +52,8 @@ $cosmosConnection = az cosmosdb keys list --name $result.properties.outputs.cosm
     "AiServices" = @{
         "Endpoint" = $result.properties.outputs.aiServicesEndpoint.value
         "Key" = $aiServicesKey
+        "ApiVersion" = "v3.2-preview.1"
+        "Region" = $location
     }
     "Storage" = @{
         "SourceContainerUrl" = $result.properties.outputs.audiofile_url.value
