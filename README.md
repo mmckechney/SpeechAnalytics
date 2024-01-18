@@ -19,7 +19,7 @@ az login
 
 
 
-## How to use
+## How to use the demo console app
 
 When you run the app for the first time, select the `1` option to analyze a new call audio file.\
 You will be prompted to enter the path to the audio file. The app will then upload the file to Blob storage and start the analysis process.

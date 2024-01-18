@@ -11,6 +11,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CallCenterFunction", "CallCenterFunction\CallCenterFunction.csproj", "{FCF4861D-D670-44DD-991E-B047B8F4C8B0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeechAnalyticsLibrary", "SpeechAnalyticsLibrary\SpeechAnalyticsLibrary.csproj", "{34AC1ABE-2ED8-44A5-94AC-077335767142}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{A42C16B2-5576-4F06-8AE0-4624430CB34F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A42C16B2-5576-4F06-8AE0-4624430CB34F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A42C16B2-5576-4F06-8AE0-4624430CB34F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCF4861D-D670-44DD-991E-B047B8F4C8B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCF4861D-D670-44DD-991E-B047B8F4C8B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCF4861D-D670-44DD-991E-B047B8F4C8B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCF4861D-D670-44DD-991E-B047B8F4C8B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34AC1ABE-2ED8-44A5-94AC-077335767142}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34AC1ABE-2ED8-44A5-94AC-077335767142}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34AC1ABE-2ED8-44A5-94AC-077335767142}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34AC1ABE-2ED8-44A5-94AC-077335767142}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
