@@ -1,11 +1,9 @@
 # Speech Analytics Demo
 This demo highlights the power of combining Microsoft [AI Services Speech to Text](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/) and [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service) to transcribe and analyze the content of a call center conversation.
-It will extract the call sentiment, and action items that were discussed during the call and also summarize problem statements and root causes.
-
 
 ![Architecture](images/Architecture.png)
 
-The transcriptions are saved to Azure Blob storage and the results of the analysis are displayed in the console and saved to Cosmos DB.
+Transcripts also saved to Azure Blob storage and the final results are also displayed in the console.
 
 
 ## Get Started
@@ -45,6 +43,6 @@ As each step is complete, the app will display the results in the console.
 
 Upon running again, the app will locate any prior transcription results and prompt you to use those or upload a new file.
 
-![Subsequent runs](images/subsequent_runs.png)
+![Subsequent runs](images/subsequent_run.png)
 
 
