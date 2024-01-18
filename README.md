@@ -3,7 +3,7 @@ This demo highlights the power of combining Microsoft [AI Services Speech to Tex
 It will extract the call sentiment, and action items that were discussed during the call and also summarize problem statements and root causes.
 
 
-![Architecture](images/architecture.png)
+![Architecture](images/Architecture.png)
 
 The transcriptions are saved to Azure Blob storage and the results of the analysis are displayed in the console and saved to Cosmos DB.
 
