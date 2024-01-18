@@ -2,6 +2,9 @@
 This demo highlights the power of combining Microsoft [AI Services Speech to Text](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/) and [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service) to transcribe and analyze the content of a call center conversation.
 It will extract the call sentiment, and action items that were discussed during the call and also summarize problem statements and root causes.
 
+
+![Architecture](images/architecture.png)
+
 The transcriptions are saved to Azure Blob storage and the results of the analysis are displayed in the console and saved to Cosmos DB.
 
 
@@ -25,7 +28,7 @@ You will be prompted to enter the path to the audio file. The app will then uplo
 
 Alternatively, you can select the `2` option to transcribe and analyze all of the audio files in the Blob storage container.
 
-<img src="images/first_run.png">
+![First run](images/first_run.png)
 
 The app will:
 1. Upload the audio file to Blob storage (only for option 1)
@@ -42,6 +45,6 @@ As each step is complete, the app will display the results in the console.
 
 Upon running again, the app will locate any prior transcription results and prompt you to use those or upload a new file.
 
-<img src="images/subsequent_run.png">
+![Subsequent runs](images/subsequent_runs.png)
 
 
