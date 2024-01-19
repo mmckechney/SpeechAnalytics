@@ -14,7 +14,7 @@ Then, simply login to the Azure CLI and run the deployment script:
 
 ``` PowerShell
 az login
-.\deploy.ps1 -resourceGroup "<rg name>"-location "<azure region>" -aiServicesAcctName "<ai svc name>" -storageAcctName "<storage acct>" -azureOpenAiEndpoint "<exising AOAI endpoint>" -azureOpenAiKey "<existing AOAI key>"
+.\deploy.ps1 -resourceGroup "<rg name>"-location "<azure region>" -aiServicesAcctName "<ai svc name>" -storageAcctName "<storage acct>" -azureOpenAiEndpoint "<exising AOAI endpoint>" -azureOpenAiKey "<existing AOAI key>" -functionAppName "<function app name>" -cosmosAccountName "<cosmos acct name>"
 ```
 
 
