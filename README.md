@@ -3,9 +3,6 @@ This demo highlights the power of combining Microsoft [AI Services Speech to Tex
 
 ![Architecture](images/Architecture.png)
 
-Transcripts also saved to Azure Blob storage and the final results are also displayed in the console.
-
-
 ## Get Started
 
 To simplify the deployment of the demo, we have created Azure Bicep templates and a PowerShell script to deploy the required resources to your Azure subscription. Becuase Azure Open AI resources are not yet available in all regions, you will need to [deploy that on your own](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal) and provide the endpoint and key to the deployment script.
