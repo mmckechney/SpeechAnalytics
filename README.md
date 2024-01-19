@@ -3,9 +3,6 @@ This demo highlights the power of combining Microsoft [AI Services Speech to Tex
 
 ![Architecture](images/Architecture.png)
 
-Transcripts also saved to Azure Blob storage and the final results are also displayed in the console.
-
-
 ## Get Started
 
 To simplify the deployment of the demo, we have created Azure Bicep templates and a PowerShell script to deploy the required resources to your Azure subscription. Becuase Azure Open AI resources are not yet available in all regions, you will need to [deploy that on your own](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal) and provide the endpoint and key to the deployment script.
@@ -14,12 +11,12 @@ Then, simply login to the Azure CLI and run the deployment script:
 
 ``` PowerShell
 az login
-.\deploy.ps1 -resourceGroup "<rg name>"-location "<azure region>" -aiServicesAcctName "<ai svc name>" -storageAcctName "<storage acct>" -azureOpenAiEndpoint "<exising AOAI endpoint>" -azureOpenAiKey "<existing AOAI key>"
+.\deploy.ps1 -resourceGroup "<rg name>"-location "<azure region>" -aiServicesAcctName "<ai svc name>" -storageAcctName "<storage acct>" -azureOpenAiEndpoint "<exising AOAI endpoint>" -azureOpenAiKey "<existing AOAI key>" -functionAppName "<function app name>" -cosmosAccountName "<cosmos acct name>"
 ```
 
 
 
-## How to use
+## How to use the demo console app
 
 When you run the app for the first time, select the `1` option to analyze a new call audio file.\
 You will be prompted to enter the path to the audio file. The app will then upload the file to Blob storage and start the analysis process.

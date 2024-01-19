@@ -1,12 +1,10 @@
-﻿
-using DocumentFormat.OpenXml.Wordprocessing;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Spectre.Console;
-using SpeechAnalytics.Models;
+using SpeechAnalyticsLibrary;
+using SpeechAnalyticsLibrary.Models;
 using System.Text.Json;
-
 
 namespace SpeechAnalytics
 {
@@ -61,10 +59,10 @@ namespace SpeechAnalytics
          //semanticMemory.InitMemory();
          identityHelper = new IdentityHelper(logFactory.CreateLogger<IdentityHelper>());
          fileHandler = new FileHandling(logFactory.CreateLogger<FileHandling>(), identityHelper);
-         skAi = new SkAi(logFactory.CreateLogger<SkAi>(), config, logFactory, settings.AzureOpenAi, loglevel);
-         batch = new BatchTranscription(logFactory.CreateLogger<BatchTranscription>(), fileHandler, skAi, settings.AiServices);
-         cosmosHelper = new CosmosHelper(logFactory.CreateLogger<CosmosHelper>(), settings.CosmosDB);
-         speechD = new SpeechDiarization(logFactory.CreateLogger<SpeechDiarization>(), settings.AiServices);
+         skAi = new SkAi(logFactory.CreateLogger<SkAi>(), config, logFactory, settings, loglevel);
+         batch = new BatchTranscription(logFactory.CreateLogger<BatchTranscription>(), fileHandler, skAi, settings);
+         cosmosHelper = new CosmosHelper(logFactory.CreateLogger<CosmosHelper>(), settings);
+         speechD = new SpeechDiarization(logFactory.CreateLogger<SpeechDiarization>(), settings);
 
       }
       static async Task Main(string[] args)
@@ -194,7 +192,8 @@ namespace SpeechAnalytics
                      {
                         insightObj.id = existingInsightObj.id;
                      }
-
+                     log.LogDebug(JsonSerializer.Serialize<InsightResults>(insightObj, new JsonSerializerOptions() { WriteIndented = true }));
+                     
                      bool saved = await cosmosHelper.SaveAnalysis(insightObj);
                      if (saved)
                      {
@@ -215,8 +214,12 @@ namespace SpeechAnalytics
                   log.LogInformation($"  - " + string.Join($"{Environment.NewLine}  - ", insightObj.SentimentExamples));
                   log.LogInformation("Action Items:", ConsoleColor.Cyan);
                   log.LogInformation($"  - " + string.Join($"{Environment.NewLine}  - ", insightObj.FollowUpActions));
-                  log.LogInformation("Problem Statement/Root Cause", ConsoleColor.Cyan);
+                  log.LogInformation("Problem Statement:", ConsoleColor.Cyan);
+                  log.LogInformation($"  - " + insightObj.ProblemStatement);
+                  log.LogInformation("Root Cause Type:", ConsoleColor.Cyan);
                   log.LogInformation($"  - " + insightObj.RootCause);
+                  log.LogInformation("Problem Resolved?:", ConsoleColor.Cyan);
+                  log.LogInformation($"  - " + insightObj.Resolved);
                   log.LogInformation("");
                   log.LogInformation("Full Transcript:", ConsoleColor.Cyan);
                   log.LogInformation(insightObj.TranscriptText);
@@ -254,22 +257,6 @@ namespace SpeechAnalytics
             {
                transcriptions = await NewTranscriptions(path);
             }
-            //if (overwrite.ToLower() == "f")
-            //{
-            //   log.LogInformation("Using AI to format conversation...");
-            //   var raw = await fileHandler.GetTranscriptionFileTextFromBlob(fileName, settings.Storage.TargetContainerUrl);
-            //   var formatted = await skAi.GetSpeakerNames(fileName, raw.transcription);
-            //   if (formatted.transcription == raw.transcription)
-            //   {
-            //      log.LogWarning("Unable to format conversation.");
-            //   }
-            //   else
-            //   {
-            //      log.LogInformation("Saving formatted conversation");
-            //      await fileHandler.SaveTranscriptionFile(fileName, formatted.transcription, settings.Storage.TargetContainerUrl);
-            //   }
-            //   transcriptions.Add(formatted);
-            //}
             else
             {
                transcriptions.Add(await fileHandler.GetTranscriptionFileTextFromBlob(fileName, settings.Storage.TargetContainerUrl));
