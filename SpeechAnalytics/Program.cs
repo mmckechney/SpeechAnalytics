@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using Microsoft.SemanticKernel.Plugins.Memory;
 using Spectre.Console;
 using SpeechAnalyticsLibrary;
 using SpeechAnalyticsLibrary.Models;
@@ -79,19 +80,21 @@ namespace SpeechAnalytics
          files = await fileHandler.GetTranscriptionList(settings.Storage.TargetContainerUrl, startIndex);
 
 
+         int pad = 3;
          while (true)
          {
             try
             {
                log.LogInformation("");
                log.LogInformation("Please make a selection:", ConsoleColor.Green);
-               log.LogInformation("1. Transcribe a new audio file");
-               log.LogInformation($"2. Transcribe all audio files in container");
+               log.LogInformation($"{"1.".PadRight(pad)} Transcribe a new audio file");
+               log.LogInformation($"{"2.".PadRight(pad)} Transcribe all audio files in container");
                log.LogInformation("");
-               if (files.Count > 0) log.LogInformation("or select from a previous transcription:");
+               if (files.Count > 0) log.LogInformation("Or select from a previous transcription:", ConsoleColor.DarkGreen);
                foreach (var file in files)
                {
-                  log.LogInformation($"{file.Key}. {file.Value}");
+                  var tmp = file.Key.ToString() + ".";
+                  log.LogInformation($"{tmp.PadRight(pad)} {file.Value}");
                }
                Console.WriteLine();
                var selection = Console.ReadLine();
