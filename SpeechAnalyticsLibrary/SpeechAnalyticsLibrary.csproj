@@ -30,7 +30,7 @@
    <PackageReference Include="Microsoft.SemanticKernel.Planners.Handlebars" Version="1.1.0-preview" />
    <PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureAISearch" Version="1.1.0-alpha" />
       <PackageReference Include="Azure.Identity" Version="1.10.4" />
-      <PackageReference Include="Azure.Storage.Blobs" Version="12.19.1" />
+      <PackageReference Include="Azure.Storage.Blobs" Version="12.20.0-beta.1" />
       <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.37.1" />
       <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.34.1" />
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
