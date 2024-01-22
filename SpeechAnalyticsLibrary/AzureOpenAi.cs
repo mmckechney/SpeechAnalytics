@@ -1,8 +1,11 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Azure;
+using Azure.AI.OpenAI;
+using Azure.Identity;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Memory;
 using Microsoft.SemanticKernel.PromptTemplates.Handlebars;
 using SpeechAnalyticsLibrary;
 using SpeechAnalyticsLibrary.Models;
@@ -22,16 +25,21 @@ namespace SpeechAnalyticsLibrary
       Dictionary<string, KernelFunction> yamlPrompts = new();
       AzureOpenAi settings;
       HttpClient _client;
+      private OpenAIClient openAIClient;
+      private SemanticMemory skMemory;
+      private CosmosHelper cosmosHelper;
 
-      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings) : this(log, config, loggerFactory, aiSettings, LogLevel.Information)
+      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, SemanticMemory skMemory, CosmosHelper cosmosHelper) : this(log, config, loggerFactory, aiSettings, skMemory, cosmosHelper, LogLevel.Information)
       {
 
       }
-      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, LogLevel logLevel)
-      { 
-         this.settings = aiSettings.AzureOpenAi;
+      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, SemanticMemory skMemory, CosmosHelper cosmosHelper, LogLevel logLevel)
+      {
+         settings = aiSettings.AzureOpenAi;
          _config = config;
          this.log = log;
+         this.skMemory = skMemory;
+         this.cosmosHelper = cosmosHelper;
          this.loggerFactory = LoggerFactory.Create(builder =>
          {
             builder.SetMinimumLevel(logLevel);
@@ -42,11 +50,10 @@ namespace SpeechAnalyticsLibrary
 
             });
 
-            if (logLevel != LogLevel.Debug)
-            {
-               builder.AddFilter("Microsoft", LogLevel.Warning);
-               builder.AddFilter("System", LogLevel.Warning);
-            }
+
+            builder.AddFilter("Microsoft", LogLevel.Warning);
+            builder.AddFilter("System", LogLevel.Warning);
+
          }); ;
 
          InitPlugins();
@@ -67,7 +74,7 @@ namespace SpeechAnalyticsLibrary
          if (settings != null)
          {
             var builder = Kernel.CreateBuilder();
-            builder.Services.AddSingleton(loggerFactory);
+            // builder.Services.AddSingleton(loggerFactory);
             builder.AddAzureOpenAIChatCompletion(deploymentName: settings.ChatDeploymentName, modelId: settings.ChatModel, endpoint: settings.EndPoint, apiKey: settings.Key, httpClient: _client);
 
             sk = builder.Build();
@@ -93,6 +100,15 @@ namespace SpeechAnalyticsLibrary
          });
          var plugin = KernelPluginFactory.CreateFromFunctions("YAMLPlugins", yamlPrompts.Select(y => y.Value).ToArray());
          sk.Plugins.Add(plugin);
+
+         if (!string.IsNullOrWhiteSpace(settings.Key))
+         {
+            openAIClient = new OpenAIClient(new Uri(settings.EndPoint), new AzureKeyCredential(settings.Key));
+         }
+         else
+         {
+            openAIClient = new OpenAIClient(new Uri(settings.EndPoint), new DefaultAzureCredential());
+         }
 
 
 #pragma warning disable SKEXP0004 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
@@ -193,6 +209,63 @@ namespace SpeechAnalyticsLibrary
             log.LogError($"Error formatting conversation: {exe.Message}");
          }
          return speakerDict;
+      }
+
+      public async Task<string> AskQuestions(string userQuestion)
+      {
+         try
+         {
+            var result = await sk.InvokeAsync(yamlPrompts["CosmosDb_QueryGenerator"], new() { { "question", userQuestion } });
+            var cosmosResults = await cosmosHelper.GetQueryResults(result.GetValue<string>());
+            if (cosmosResults.Length == 0)
+            {
+               return "Sorry, I was unable to find an answer. Please try asking in a different way.";
+            }
+            var questionAnswer = await sk.InvokeAsync(yamlPrompts["Ask_Question"], new() { { "question", userQuestion }, { "data", cosmosResults } });
+
+            return questionAnswer.GetValue<string>();
+         }
+         catch (Exception exe)
+         {
+
+            log.LogError($"Error getting insights: {exe.Message}");
+            return $"Sorry, I am having trouble answering your question. {exe.Message}";
+         }
+      }
+#pragma warning disable SKEXP0003 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+      internal async Task<string> AskOpenAIAsync(string prompt, IAsyncEnumerable<MemoryQueryResult> memories)
+      {
+         log.LogDebug("Ask OpenAI Async A Question");
+
+
+         var content = "";
+         await foreach (MemoryQueryResult memoryResult in memories)
+         {
+            log.LogDebug("Memory Result = " + memoryResult.Metadata.Description);
+            content += memoryResult.Metadata.Description;
+         };
+
+         var chatCompletionsOptions = GetChatCompletionsOptions(content, prompt);
+         var completionsResponse = await openAIClient.GetChatCompletionsAsync(chatCompletionsOptions);
+         string completion = completionsResponse.Value.Choices[0].Message.Content;
+
+         return completion;
+      }
+
+      public ChatCompletionsOptions GetChatCompletionsOptions(string content, string prompt)
+      {
+         var opts = new ChatCompletionsOptions()
+         {
+            Messages =
+                  {
+                      new ChatRequestSystemMessage(@"You are a document answering bot.  You will be provided with information from a document, and you are to answer the question based on the content provided.  Your are not to make up answers. Use the content provided to answer the question."),
+                      new ChatRequestUserMessage(@"Content = " + content),
+                      new ChatRequestUserMessage(@"Question = " + prompt),
+                  },
+         };
+         opts.DeploymentName = settings.ChatDeploymentName;
+
+         return opts;
       }
    }
 }

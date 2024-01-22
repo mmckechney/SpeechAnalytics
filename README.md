@@ -11,13 +11,15 @@ Then, simply login to the Azure CLI and run the deployment script:
 
 ``` PowerShell
 az login
-.\deploy.ps1 -resourceGroup "<rg name>"-location "<azure region>" -aiServicesAcctName "<ai svc name>" -storageAcctName "<storage acct>" -azureOpenAiEndpoint "<exising AOAI endpoint>" -azureOpenAiKey "<existing AOAI key>" -functionAppName "<function app name>" -cosmosAccountName "<cosmos acct name>"
+.\deploy.ps1 -resourceGroup "<rg name>"-location "<azure region>" -aiServicesAcctName "<ai svc name>" -storageAcctName "<storage acct>" -azureOpenAiEndpoint "<exising AOAI endpoint>" -azureOpenAiKey "<existing AOAI key>" -functionAppName "<function app name>" -cosmosAccountName "<cosmos acct name>" -keyVaultName "<key vault name>" -aiSearchName "<azure search name>"
+
 ```
 
 
 
 ## How to use the demo console app
 
+### First time run
 When you run the app for the first time, select the `1` option to analyze a new call audio file.\
 You will be prompted to enter the path to the audio file. The app will then upload the file to Blob storage and start the analysis process.
 
@@ -38,7 +40,9 @@ The app will:
 
 As each step is complete, the app will display the results in the console.
 
-Upon running again, the app will locate any prior transcription results and prompt you to use those or upload a new file.
+### Subsequent runs
+
+Upon running again, the app will locate any prior transcription results and prompt you to use those or upload a new file. In addition, you can type in a question to ask regarding the transcription and insights of audio files that have already been analyzed.
 
 ![Subsequent runs](images/subsequent_run.png)
 

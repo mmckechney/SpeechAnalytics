@@ -105,7 +105,7 @@ namespace SpeechAnalyticsLibrary
          {
             blobFile = new Uri(await fileHandler.UploadBlobForTranscription(localFile, sourceSas));
          }
-        return await StartBatchTranscription(transcriptionEndpoint,transcriptionKey,sourceSas,destinationSas,blobFile);
+         return await StartBatchTranscription(transcriptionEndpoint, transcriptionKey, sourceSas, destinationSas, blobFile);
       }
       public async Task<TranscriptionResponse?> CheckTranscriptionStatus(string operationUrl, string transcriptionKey)
       {

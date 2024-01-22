@@ -82,17 +82,25 @@
 
       public async Task<Dictionary<int, string>> GetTranscriptionList(string containerUrl, int startIndex)
       {
-
-         Dictionary<int, string> files = new();
-         int counter = startIndex;
-         var containerClient = GetContainerClient(containerUrl);
-         var iterator = containerClient.GetBlobsAsync().GetAsyncEnumerator();
-         while (await iterator.MoveNextAsync())
+         try
          {
-            files.Add(counter, iterator.Current.Name);
-            counter++;
+            Dictionary<int, string> files = new();
+            int counter = startIndex;
+            var containerClient = GetContainerClient(containerUrl);
+
+            var iterator = containerClient.GetBlobsAsync().GetAsyncEnumerator();
+            while (await iterator.MoveNextAsync())
+            {
+               files.Add(counter, iterator.Current.Name);
+               counter++;
+            }
+            return files;
          }
-         return files;
+         catch (Exception exe)
+         {
+            log.LogError($"Error: {exe.Message}");
+            return new Dictionary<int, string>();
+         }
       }
 
       public async Task<(string source, string transcription)> GetTranscriptionFileTextFromBlob(string filename, string containerUrl)

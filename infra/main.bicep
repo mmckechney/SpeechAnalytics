@@ -10,6 +10,8 @@ param functionAppName string
 param azureOpenAiKey string
 param azureOpenAiEndpoint string
 param cosmosAccountName string
+param keyVaultName string
+param aiSearchName string
 
 
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
@@ -23,6 +25,7 @@ module storage 'storage.bicep' = {
     params: {
         location: location
         storageAccountName:storageAccountName
+        keyVaultName: keyVaultName
       
     }
     dependsOn: [
@@ -36,12 +39,29 @@ module aiServices 'aiservices.bicep' = {
 	params: {
         location: location
 		aiServicesAccountName: aiServicesAccountName
+        keyVaultName: keyVaultName
+        
 	}
     dependsOn: [
         rg
+        keyvault
     ]
 }
 
+module aiSearch 'aisearch.bicep' = {
+    scope: resourceGroup(resourceGroupName)
+    name: 'aisearch'
+    params: {
+        location: location
+        aiSearchName:aiSearchName
+        keyVaultName: keyVaultName
+        
+    }
+    dependsOn: [
+        rg
+        keyvault
+    ]
+}
 module roleassignment 'roleassignment.bicep' = {
 	scope: resourceGroup(resourceGroupName)
 	name: 'roleassignment'
@@ -50,9 +70,13 @@ module roleassignment 'roleassignment.bicep' = {
         aiServicesPrincipal: aiServices.outputs.aiServicesIdentityPrincipal
         blobContainerName: storage.outputs.audiofile_container
         functionAppPrincipal: function.outputs.functionPrincipalId
+        keyVaultName: keyVaultName
 	}
     dependsOn: [
         rg
+        keyvault
+        cosmosDB
+        aiServices
     ]
 }
 
@@ -64,9 +88,11 @@ module cosmosDB 'cosmos.bicep' = {
         cosmosAccountName: cosmosAccountName
         cosmosContainerName: 'analyticscontainer'
         cosmosDataBaseName: 'speechanalyticsdb'
+        keyVaultName: keyVaultName
     }
     dependsOn: [
         rg
+        keyvault
     ]
 }
 
@@ -75,29 +101,52 @@ module function 'function.bicep' = {
     name: 'function'
     params: {
         location: location
-        storageAccountName: storageAccountName
-        cosmosAccountName: cosmosDB.outputs.cosmosAccountName
         aiServicesAccountName: aiServicesAccountName
         cosmosDbContainerName: cosmosDB.outputs.cosmosContainerName
         cosmosDbName: cosmosDB.outputs.cosmosDataBaseName
         functionAppName: functionAppName
-        openAiKey: azureOpenAiKey
-        openEndpoint:azureOpenAiEndpoint
-        sourceContainerSas: storage.outputs.audiofile_url
-        targetContainerSas: storage.outputs.transcription_url
+        keyVaultName: keyVaultName
+        aiServicesSecretName: aiServices.outputs.aiServicesSecretName
+        audioSecretName: storage.outputs.audioSecretname
+        transcriptionSecretName: storage.outputs.transcriptionSecretname
+        cosmosSecretName: cosmosDB.outputs.cosmosSecretName
+        openAiEndpointSecretName: keyvault.outputs.openAiEndpointSecretName
+        openAiKeySecretName: keyvault.outputs.openAiKeySecretName
+        storgeConnectionSecretName: storage.outputs.storageConnectionSecretName
+        storageAccountName: storageAccountName
+        aiSearchAdminKeySecretName: aiSearch.outputs.aiSearchAdminKeySecretName
+        aiSearchEndpointSecretName: aiSearch.outputs.aiSearchEndpointSecretName
+
     }
     dependsOn: [
         rg
         aiServices
+        keyvault
+        cosmosDB
+        storage
+    ]
+}
+
+module keyvault 'keyvault.bicep' = {
+    scope: resourceGroup(resourceGroupName)
+    name: 'keyvault'
+    params:{
+        keyVaultName: keyVaultName
+        openAiEndpoint: azureOpenAiEndpoint 
+        openAiKey:azureOpenAiKey
+        location: location
+    }
+    dependsOn: [
+        rg
     ]
 }
 
 output aiServicesEndpoint string = aiServices.outputs.endpoint
 output location string = aiServices.outputs.location
-output transcriptfile_url string = storage.outputs.transcription_url
-output audiofile_url string = storage.outputs.audiofile_url
 output cosmosEndpoint string = cosmosDB.outputs.cosmosAccountEndpoint
 output cosmosAccountName string = cosmosDB.outputs.cosmosAccountName
 output cosmosContainerName string = cosmosDB.outputs.cosmosContainerName
 output cosmosDataBaseName string = cosmosDB.outputs.cosmosDataBaseName
+output audioContainerName string = storage.outputs.audioContainerName
+output transcriptContainerName string = storage.outputs.transcriptContainerName
 

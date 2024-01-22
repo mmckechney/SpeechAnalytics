@@ -23,6 +23,12 @@ param (
     [Parameter(Mandatory = $True)]
     [string]
     $azureOpenAiKey,
+    [Parameter(Mandatory = $True)]
+    [string]
+    $keyVaultName,
+    [Parameter(Mandatory = $True)]
+    [string]
+    $aiSearchName,
     [string]
     $chatModel = "gpt-4-32k",
     [string]
@@ -42,7 +48,9 @@ Write-Host -ForegroundColor Green "Creating resource group $resourceGroup and re
 $result = az deployment sub create --location $location --template-file .\infra\main.bicep --parameters resourceGroupName=$resourceGroup storageAccountName=$storageAcctName `
     aiServicesAccountName=$aiServicesAcctName location=$location `
     azureOpenAiEndpoint=$azureOpenAiEndpoint azureOpenAiKey=$azureOpenAiKey `
-    functionAppName=$functionAppName cosmosAccountName=$cosmosAccountName | ConvertFrom-Json -Depth 10
+    functionAppName=$functionAppName cosmosAccountName=$cosmosAccountName `
+    keyVaultName=$keyVaultName aiSearchName=$aiSearchName | ConvertFrom-Json -Depth 10
+
 
 Write-Host -ForegroundColor Green "Deployment Result"
 Write-Host -ForegroundColor Yellow ($result.properties.outputs | ConvertTo-Json)
@@ -54,12 +62,26 @@ if($null -eq $result) {exit}
 Write-Host -ForegroundColor Green "Getting translation account account key"
 $aiServicesKey = az cognitiveservices account keys list --resource-group $resourceGroup  --name $aiServicesAcctName -o tsv --query key1
 
+Write-Host -ForegroundColor Green "Getting AI Search account account key"
+$aiSearchKey = az search admin-key show --resource-group $resourceGroup  --service-name $aiSearchName -o tsv --query primaryKey
+
 Write-Host -ForegroundColor Green "Getting Cosmos Connection String"
 $cosmosConnection = az cosmosdb keys list --name $result.properties.outputs.cosmosAccountName.value --resource-group $resourceGroup --type connection-strings -o tsv --query connectionStrings[0].connectionString
 
-Write-Host -ForegroundColor Green "Getting Storage Connection String"
+Write-Host -ForegroundColor Green "Getting Storage Connection  and SAS Urls"
 $storageKey = az storage account keys list -n $storageAcctName -g $resourceGroup --query [0].value -o tsv
-$storageConnection = "DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=$($storageKey)};EndpointSuffix=core.windows.net"
+$storageConnection = "DefaultEndpointsProtocol=https;AccountName=${storageAcctName};AccountKey=$($storageKey);EndpointSuffix=core.windows.net"
+
+$expiry = (Get-Date).ToUniversalTime().AddYears(1).ToString("yyyy-MM-ddTHH:mm:ssZ")
+$start =  (Get-Date).ToUniversalTime().AddMinutes(-5).ToString("yyyy-MM-ddTHH:mm:ssZ")
+$audioContainerName = $result.properties.outputs.audioContainerName.value
+$audioSasTmp = az storage container generate-sas --account-name $storageAcctName --name $audioContainerName   --account-key $storageKey --permissions racwdl --expiry $expiry --start $start --https-only -o tsv
+$audioSas = "https://$storageAcctName.blob.core.windows.net/$($audioContainerName)?$audioSasTmp"
+
+$transcriptContainerName = $result.properties.outputs.transcriptContainerName.value
+$transcriptSasTmp = az storage container generate-sas --account-name $storageAcctName --name $transcriptContainerName --account-key $storageKey --permissions racwdl --expiry $expiry --start $start --https-only -o tsv
+$transcriptSas = "https://$storageAcctName.blob.core.windows.net/$($transcriptContainerName)?$transcriptSasTmp"
+
 
  $localsettings = @{
     "AiServices" = @{
@@ -69,8 +91,8 @@ $storageConnection = "DefaultEndpointsProtocol=https;AccountName=${storageAccoun
         "Region" = $location
     }
     "Storage" = @{
-        "SourceContainerUrl" = $result.properties.outputs.audiofile_url.value
-        "TargetContainerUrl" = $result.properties.outputs.transcriptfile_url.value
+       "SourceContainerUrl" = $audioSas
+        "TargetContainerUrl" = $transcriptSas
     }
     "AzureOpenAi" = @{
      
@@ -82,8 +104,8 @@ $storageConnection = "DefaultEndpointsProtocol=https;AccountName=${storageAccoun
         "EmbeddingDeploymentName" = $embeddingDeploymentName
     }
     "AiSearch" = @{
-        "Endpoint" = ""
-        "Key" = ""
+        "Endpoint" = "https://$($aiSearchName).search.windows.net"
+        "Key" = $aiSearchKey
     }
     "CosmosDb" = @{
         "ConnectionString" = $cosmosConnection
@@ -112,8 +134,8 @@ $functionSettings = @{
         "AiServices:ApiVersion" = "v3.2-preview.1"
         "AiServices:Region" = $location
 
-        "Storage:SourceContainerUrl" = $result.properties.outputs.audiofile_url.value
-        "Storage:TargetContainerUrl" = $result.properties.outputs.transcriptfile_url.value
+        "Storage:SourceContainerUrl" = $audioSas
+        "Storage:TargetContainerUrl" = $transcriptSas
     
         "AzureOpenAi:EndPoint" = $azureOpenAiEndpoint
         "AzureOpenAi:Key" = $azureOpenAiKey
@@ -122,8 +144,8 @@ $functionSettings = @{
         "AzureOpenAi:EmbeddingModel" = $embeddingModel
         "AzureOpenAi:EmbeddingDeploymentName" = $embeddingDeploymentName
 
-        "AiSearch:Endpoint" = ""
-        "AiSearch:Key" = ""
+        "AiSearch:Endpoint" = "https://$($aiSearchName).search.windows.net"
+        "AiSearch:Key" = $aiSearchKey
 
         "CosmosDb:ConnectionString" = $cosmosConnection
         "CosmosDb:ContainerName" = $result.properties.outputs.cosmosContainerName.value

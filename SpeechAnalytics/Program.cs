@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
-using Microsoft.SemanticKernel.Plugins.Memory;
 using Spectre.Console;
 using SpeechAnalyticsLibrary;
 using SpeechAnalyticsLibrary.Models;
@@ -56,13 +55,12 @@ namespace SpeechAnalytics
          log = logFactory.CreateLogger("Program");
 
          //Not used yet...
-         //semanticMemory = new SemanticMemory(logFactory, settings.AzureOpenAi, settings.AiSearch);
-         //semanticMemory.InitMemory();
+         semanticMemory = new SemanticMemory(logFactory, settings);
          identityHelper = new IdentityHelper(logFactory.CreateLogger<IdentityHelper>());
          fileHandler = new FileHandling(logFactory.CreateLogger<FileHandling>(), identityHelper);
-         skAi = new SkAi(logFactory.CreateLogger<SkAi>(), config, logFactory, settings, loglevel);
+         cosmosHelper = new CosmosHelper(logFactory.CreateLogger<CosmosHelper>(), settings, semanticMemory);
+         skAi = new SkAi(logFactory.CreateLogger<SkAi>(), config, logFactory, settings, semanticMemory, cosmosHelper, loglevel);
          batch = new BatchTranscription(logFactory.CreateLogger<BatchTranscription>(), fileHandler, skAi, settings);
-         cosmosHelper = new CosmosHelper(logFactory.CreateLogger<CosmosHelper>(), settings);
          speechD = new SpeechDiarization(logFactory.CreateLogger<SpeechDiarization>(), settings);
 
       }
@@ -76,9 +74,9 @@ namespace SpeechAnalytics
          Console.ForegroundColor = ConsoleColor.White;
 
          Dictionary<int, string> files;
+
          int startIndex = 3;
          files = await fileHandler.GetTranscriptionList(settings.Storage.TargetContainerUrl, startIndex);
-
 
          int pad = 3;
          while (true)
@@ -96,13 +94,21 @@ namespace SpeechAnalytics
                   var tmp = file.Key.ToString() + ".";
                   log.LogInformation($"{tmp.PadRight(pad)} {file.Value}");
                }
+               log.LogInformation("");
+               log.LogInformation($"Or just start typing to ask a question.", ConsoleColor.Green);
+
                Console.WriteLine();
                var selection = Console.ReadLine();
 
                List<(string source, string transcription)> transcriptions = new();
                if (!int.TryParse(selection, out int index) || (files.Keys.Count > 0 && index > files.Keys.Max()) || index < 1)
                {
-                  log.LogError("Please make a valid selection, number only.");
+                  log.LogInformation("");
+                  log.LogInformation("Getting your reponse...", ConsoleColor.Cyan);
+                  var reply = await skAi.AskQuestions(selection);
+                  log.LogInformation("Answer:", ConsoleColor.Cyan);
+                  log.LogInformation(reply);
+                  log.LogInformation("");
                   continue;
                }
 
@@ -123,6 +129,7 @@ namespace SpeechAnalytics
                   {
                      continue;
                   }
+
                }
                else
                {
@@ -196,7 +203,7 @@ namespace SpeechAnalytics
                         insightObj.id = existingInsightObj.id;
                      }
                      log.LogDebug(JsonSerializer.Serialize<InsightResults>(insightObj, new JsonSerializerOptions() { WriteIndented = true }));
-                     
+
                      bool saved = await cosmosHelper.SaveAnalysis(insightObj);
                      if (saved)
                      {
@@ -228,7 +235,8 @@ namespace SpeechAnalytics
                   log.LogInformation(insightObj.TranscriptText);
 
                }
-            }catch(Exception exe)
+            }
+            catch (Exception exe)
             {
                log.LogError(exe.Message);
             }
@@ -236,7 +244,7 @@ namespace SpeechAnalytics
             files = await fileHandler.GetTranscriptionList(settings.Storage.TargetContainerUrl, startIndex);
             log.LogInformation("----------------------------------------------------------");
          }
-         
+
       }
 
       private static async Task<List<(string source, string transcription)>> SingleFileTranscription(Dictionary<int, string> existingFiles)
@@ -277,7 +285,7 @@ namespace SpeechAnalytics
             {
                transcriptions.AddRange(await NewTranscriptions(path));
             }
-           
+
          }
 
          return transcriptions;
@@ -294,7 +302,7 @@ namespace SpeechAnalytics
          }
          log.LogInformation("");
          var initialResponse = await batch.StartBatchTranscription(aiSvcs.Endpoint, aiSvcs.Key, settings.Storage.SourceContainerUrl, settings.Storage.TargetContainerUrl, fileInfo);
-         
+
          TranscriptionResponse? statusResponse = null;
          if (initialResponse != null)
          {
@@ -336,7 +344,7 @@ namespace SpeechAnalytics
          //}
          return transcriptions;
       }
-   
+
 
 
       private static LogLevel SetLogLevel(string[] args)

@@ -1,0 +1,26 @@
+﻿name: AskQuestions
+description: Ask questions on the input that was returned from a CosmosDB query
+template: |
+  <message role="system"> You are an analyst that summarizes information to answer users questions based on the input
+   Attempt to answer the question asked by the user leveraging all available information. If you are unable to answer the question, respond with "I don't know".
+
+  </message>
+
+  <message role="user">
+    {{question}}
+    
+    {{data}}
+  </message>
+  <message role="system">Answer</message>
+template_format: handlebars
+input_variables: 
+ - name: question
+   description: Question posed by the user
+   is_required: true
+ - name: data
+   description: Data users is asking a question on 
+   is_required: true
+execution_settings:
+  default: 
+    max_tokens: 10000
+    temperature: 0.0

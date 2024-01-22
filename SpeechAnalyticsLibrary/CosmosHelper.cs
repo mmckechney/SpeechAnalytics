@@ -1,6 +1,8 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using SpeechAnalyticsLibrary.Models;
+using System.Text;
+using System.Text.Json;
 
 namespace SpeechAnalyticsLibrary
 {
@@ -9,11 +11,13 @@ namespace SpeechAnalyticsLibrary
       private ILogger<CosmosHelper> log;
       private CosmosClient client;
       CosmosDB settings;
-      public CosmosHelper(ILogger<CosmosHelper> log, AnalyticsSettings settings)
+      SemanticMemory skMemory;
+      public CosmosHelper(ILogger<CosmosHelper> log, AnalyticsSettings settings, SemanticMemory skMemory)
       {
          this.log = log;
          this.settings = settings.CosmosDB;
          client = new CosmosClient(this.settings.ConnectionString);
+         this.skMemory = skMemory;
       }
       public async Task<bool> SaveAnalysis(InsightResults insights)
       {
@@ -25,6 +29,9 @@ namespace SpeechAnalyticsLibrary
             if (response.StatusCode == System.Net.HttpStatusCode.OK || response.StatusCode == System.Net.HttpStatusCode.Created)
             {
                log.LogDebug($"Saved analysis of {insights.CallId} to CosmosDB");
+
+               var json = JsonSerializer.Serialize<InsightResults>(insights, new JsonSerializerOptions() { WriteIndented = true });
+               await skMemory.StoreMemoryAsync(insights.id, json);
                return true;
             }
             else
@@ -62,6 +69,36 @@ namespace SpeechAnalyticsLibrary
          {
             log.LogError("Failed to retrieve analysis from CosmosDB: " + exe.Message);
             return null;
+         }
+
+      }
+
+      public async Task<string> GetQueryResults(string cosmosQuery)
+      {
+         log.LogDebug($"Cosmos Query: {cosmosQuery}");
+         StringBuilder sb = new();
+         try
+         {
+            var container = client.GetContainer(settings.DatabaseName, settings.ContainerName);
+
+
+            var queryDefinition = new QueryDefinition(cosmosQuery);
+            var streamIterator = container.GetItemQueryStreamIterator(queryDefinition);
+            while (streamIterator.HasMoreResults)
+            {
+               var response = await streamIterator.ReadNextAsync();
+               sb.AppendLine(new StreamReader(response.Content).ReadToEnd());
+            }
+            if (sb.Length == 0)
+            {
+               log.LogDebug("No analysis found in CosmosDB for query " + cosmosQuery + ".");
+            }
+            return sb.ToString();
+         }
+         catch (Exception exe)
+         {
+            log.LogError("Failed to retrieve analysis from CosmosDB: " + exe.Message);
+            return sb.ToString();
          }
 
       }

@@ -7,11 +7,11 @@ using System.Text.Json;
 namespace CallCenterFunction
 {
    public class Transcription
-    {
+   {
       private readonly ILogger<Transcription> log;
       private AnalyticsSettings settings;
       private BatchTranscription batchTranscription;
-      private IdentityHelper identityHelper; FileHandling fileHandler; 
+      private IdentityHelper identityHelper; FileHandling fileHandler;
       private SkAi skAi;
       private CosmosHelper cosmosHelper;
       private SpeechDiarization speechDiarization;
@@ -29,9 +29,9 @@ namespace CallCenterFunction
 
       }
 
-        [Function(nameof(Transcription))]
-        public async Task RunAsync([BlobTrigger("audio/{name}", Connection = "StorageConnectionString")] Stream stream, string name)
-        {
+      [Function(nameof(Transcription))]
+      public async Task RunAsync([BlobTrigger("audio/{name}", Connection = "StorageConnectionString")] Stream stream, string name)
+      {
          log.LogInformation($"C# Blob trigger function Processed blob\n Name: {name}");
 
          List<(string source, string transcription)> transcriptions = null;
@@ -110,5 +110,5 @@ namespace CallCenterFunction
 
          return;
       }
-    }
+   }
 }

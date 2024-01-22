@@ -24,24 +24,27 @@ namespace SpeechAnalyticsLibrary
       public SemanticMemory(ILoggerFactory logFactory, AnalyticsSettings settings)
       {
          log = logFactory.CreateLogger<SemanticMemory>();
-         this.aOAISettings = settings.AzureOpenAi;
-         this.searchSettings = settings.AiSearch;
+         aOAISettings = settings.AzureOpenAi;
+         searchSettings = settings.AiSearch;
          this.logFactory = logFactory;
+         InitMemory();
       }
 
 
-      public void InitMemory()
+      private void InitMemory()
       {
 
          var openAIEndpoint = aOAISettings.EndPoint ?? throw new ArgumentException("Missing AzureOpenAi.Endpoint in configuration.");
          var embeddingModel = aOAISettings.EmbeddingModel ?? throw new ArgumentException("Missing AzureOpenAi.EmbeddingModel in configuration.");
          var embeddingDeploymentName = aOAISettings.EmbeddingDeploymentName ?? throw new ArgumentException("Missing AzureOpenAi.EmbeddingDeploymentName in configuration.");
          var apiKey = aOAISettings.Key ?? throw new ArgumentException("Missing AzureOpenAi.Key in configuration.");
-         var cogSearchEndpoint = searchSettings.Endpoint ?? throw new ArgumentException("Missing AzureOpenAi.Key in configuration.");
-         var cogSearchAdminKey = searchSettings.Key ?? throw new ArgumentException("Missing AzureOpenAi.Key in configuration.");
+         var aiSearchEndpoint = searchSettings.Endpoint ?? throw new ArgumentException("Missing AzureOpenAi.Key in configuration.");
+         var aiSearchAdminKey = searchSettings.Key ?? throw new ArgumentException("Missing AzureOpenAi.Key in configuration.");
+
 
          IMemoryStore store;
-         store = new AzureAISearchMemoryStore(cogSearchEndpoint, cogSearchAdminKey);
+         store =
+         store = new AzureAISearchMemoryStore(aiSearchEndpoint, aiSearchAdminKey);
 
          var memBuilder = new MemoryBuilder()
              .WithMemoryStore(store)
@@ -52,14 +55,14 @@ namespace SpeechAnalyticsLibrary
 
       }
 
-      public async Task StoreMemoryAsync(string collectionName, string fileName, string transcription)
+      public async Task StoreMemoryAsync(string fileName, string transcription, string collectionName = "general")
       {
 
          log.LogInformation("Storing memory...");
 
          await semanticMemory.SaveReferenceAsync(
                collection: collectionName,
-               externalSourceName: "BlobStorage",
+               externalSourceName: "CosmosDb",
                externalId: fileName,
                description: $"{fileName} {transcription}",
                text: transcription);
@@ -67,7 +70,7 @@ namespace SpeechAnalyticsLibrary
          log.LogInformation($"Saved.");
       }
 
-      public async Task<IAsyncEnumerable<MemoryQueryResult>> SearchMemoryAsync(string collectionName, string query)
+      public async Task<IAsyncEnumerable<MemoryQueryResult>> SearchMemoryAsync(string query, string collectionName = "general")
       {
 
          log.LogInformation("\nQuery: " + query + "\n");

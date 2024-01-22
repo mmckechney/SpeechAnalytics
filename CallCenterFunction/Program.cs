@@ -1,14 +1,10 @@
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Azure;
 using SpeechAnalyticsLibrary;
 using SpeechAnalyticsLibrary.Models;
-
-using static Azure.Core.HttpHeader;
-using Microsoft.Extensions.Logging.Console;
 
 namespace DocumentQuestionsFunction
 {
@@ -24,20 +20,13 @@ namespace DocumentQuestionsFunction
 
          var builder = new HostBuilder()
              .ConfigureFunctionsWorkerDefaults();
-            
-         
+
+
          builder.ConfigureLogging((hostContext, logging) =>
             {
-               //logging.ClearProviders();
                logging.SetMinimumLevel(LogLevel.Debug);
                logging.AddFilter("System", LogLevel.Warning);
                logging.AddFilter("Microsoft", LogLevel.Warning);
-               //logging.AddConsoleFormatter<CustomConsoleFormatter, ConsoleFormatterOptions>();
-               //logging.AddConsole(options =>
-               //{
-               //   options.FormatterName = "custom";
-
-               //});
             });
 
          builder.ConfigureAppConfiguration(b =>
@@ -52,7 +41,7 @@ namespace DocumentQuestionsFunction
             });
          builder.ConfigureServices(ConfigureServices);
 
-       var host = builder.Build();
+         var host = builder.Build();
 
          await host.RunAsync();
       }
@@ -72,18 +61,13 @@ namespace DocumentQuestionsFunction
          services.AddSingleton<SkAi>();
          services.AddSingleton<CosmosHelper>();
          services.AddSingleton<SpeechDiarization>();
-         //services.AddOptions<AnalyticsSettings>()
-         //   .Configure<IConfiguration>((settings, configuration) =>
-         //   {
-         //      configuration.Bind(settings);
-         //   });
 
-
-         services.AddSingleton<AnalyticsSettings>(sp =>
+       services.AddSingleton<AnalyticsSettings>(sp =>
          {
             var config = sp.GetRequiredService<IConfiguration>();
             var settings = new AnalyticsSettings();
             config.Bind(settings);
+            Program.settings = settings;
             return settings;
          });
 

@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Prompts\Ask.Question.yaml" />
+    <None Remove="Prompts\CosmosDb.QueryGenerator.yaml" />
     <None Remove="Prompts\Transcription.Insights.yaml" />
     <None Remove="Prompts\Transcription.SpeakerId.yaml" />
   </ItemGroup>
