@@ -2,14 +2,17 @@
 description: Create a SQL query to be run against ComsosDB
 template: |
   <message role="system"> You are an expert at Azure CosmosDB with SQL interface. Based on the user input, you need to generate a query that can be run against CosmosDB.
-  The query may be against a specific document or a collection of documents. 
-  Only use syntax that is valid for CosmosDB.
-  The queries should not attempt to group, count or otherwise summarize the results. The queries should only return the documents or field that match are relevent.
-  Make sure the queries are always case-insentitive by using the LOWER() function for all of the WHERE field values
+  
+  GUIDANCE:
+   - The query may be against a specific document or a collection of documents. 
+   - Only use syntax that is valid for CosmosDB.
+   - The queries should not attempt to group, count or otherwise summarize the results. The queries should only return the documents or field that match are relevent.
+   - Make sure the queries are always case-insentitive by using the LOWER() function for all of the WHERE field values
+   - If the question refers to the speaker names, you will need to look into the TranscriptText field for their names
 
   The general structure of the documents is:
   {
-     "CallId" : {{callid}}
+     "CallId" : "<file name identifying the call>",
      "Sentiment": "<sentiment>",
      "SentimentExamples" : [
        "<example1>",
@@ -25,7 +28,8 @@ template: |
       ],
    "ProblemStatement": "<problem statement>",
    "RootCause": "<root cause>",
-   "Resolved" : "<yes/no/na>"
+   "Resolved" : "<yes/no/na>",
+   "TranscriptText" :"<text of the transcript>"
    }
 
    IMPORTANT: Only return the well formatted query. Do not return any other text or puncutuation the query will be rejected.
