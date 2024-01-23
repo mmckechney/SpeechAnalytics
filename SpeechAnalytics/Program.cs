@@ -76,13 +76,14 @@ namespace SpeechAnalytics
          Dictionary<int, string> files;
 
          int startIndex = 3;
-         files = await fileHandler.GetTranscriptionList(settings.Storage.TargetContainerUrl, startIndex);
+        
 
          int pad = 3;
          while (true)
          {
             try
             {
+               files = await fileHandler.GetTranscriptionList(settings.Storage.TargetContainerUrl, startIndex);
                log.LogInformation("");
                log.LogInformation("Please make a selection:", ConsoleColor.Green);
                log.LogInformation($"{"1.".PadRight(pad)} Transcribe a new audio file");
@@ -104,11 +105,13 @@ namespace SpeechAnalytics
                if (!int.TryParse(selection, out int index) || (files.Keys.Count > 0 && index > files.Keys.Max()) || index < 1)
                {
                   log.LogInformation("");
-                  log.LogInformation("Getting your reponse...", ConsoleColor.Cyan);
+                  log.LogInformation("Getting your response...", ConsoleColor.Cyan);
                   var reply = await skAi.AskQuestions(selection);
                   log.LogInformation("Answer:", ConsoleColor.Cyan);
                   log.LogInformation(reply);
                   log.LogInformation("");
+                  log.LogInformation("Press any key to continue...", ConsoleColor.Cyan);
+                  Console.ReadKey();
                   continue;
                }
 
@@ -241,7 +244,7 @@ namespace SpeechAnalytics
                log.LogError(exe.Message);
             }
 
-            files = await fileHandler.GetTranscriptionList(settings.Storage.TargetContainerUrl, startIndex);
+            
             log.LogInformation("----------------------------------------------------------");
          }
 

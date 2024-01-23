@@ -2,7 +2,7 @@
   "profiles": {
     "SpeechAnalytics": {
       "commandName": "Project",
-      "commandLineArgs": "--loglevel info"
+      "commandLineArgs": "--loglevel debug"
     }
   }
 }
