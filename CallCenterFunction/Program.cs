@@ -57,6 +57,7 @@ namespace DocumentQuestionsFunction
          services.AddSingleton<SemanticMemory>();
          services.AddSingleton<BatchTranscription>();
          services.AddSingleton<IdentityHelper>();
+         services.AddSingleton<FunctionFilter>();
          services.AddSingleton<FileHandling>();
          services.AddSingleton<SkAi>();
          services.AddSingleton<CosmosHelper>();

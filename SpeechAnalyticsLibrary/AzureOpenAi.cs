@@ -2,6 +2,7 @@
 using Azure.AI.OpenAI;
 using Azure.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.SemanticKernel;
@@ -11,35 +12,40 @@ using SpeechAnalyticsLibrary;
 using SpeechAnalyticsLibrary.Models;
 using System.Net;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace SpeechAnalyticsLibrary
 {
+#pragma warning disable SKEXP0004 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+#pragma warning disable SKEXP0003 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+
    public class SkAi
    {
       private IConfiguration _config;
       private Kernel sk;
       private ILogger log;
-      ILoggerFactory loggerFactory;
+      private ILoggerFactory loggerFactory;
       Dictionary<string, KernelFunction> yamlPrompts = new();
       AzureOpenAi settings;
       HttpClient _client;
-      private OpenAIClient openAIClient;
       private SemanticMemory skMemory;
       private CosmosHelper cosmosHelper;
+      private IFunctionFilter functionFilter;
 
-      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, SemanticMemory skMemory, CosmosHelper cosmosHelper) : this(log, config, loggerFactory, aiSettings, skMemory, cosmosHelper, LogLevel.Information)
+      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, SemanticMemory skMemory, CosmosHelper cosmosHelper, IFunctionFilter functionFilter) : this(log, config, loggerFactory, aiSettings, skMemory, cosmosHelper, LogLevel.Information, functionFilter)
       {
 
       }
-      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, SemanticMemory skMemory, CosmosHelper cosmosHelper, LogLevel logLevel)
+      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, SemanticMemory skMemory, CosmosHelper cosmosHelper, LogLevel logLevel, IFunctionFilter functionFilter)
       {
          settings = aiSettings.AzureOpenAi;
          _config = config;
          this.log = log;
          this.skMemory = skMemory;
          this.cosmosHelper = cosmosHelper;
+         this.functionFilter = functionFilter;
          this.loggerFactory = LoggerFactory.Create(builder =>
          {
             builder.SetMinimumLevel(logLevel);
@@ -74,6 +80,10 @@ namespace SpeechAnalyticsLibrary
          if (settings != null)
          {
             var builder = Kernel.CreateBuilder();
+            builder.Services.AddSingleton<IFunctionFilter, FunctionFilter>(s =>
+            {
+               return new FunctionFilter(loggerFactory.CreateLogger<FunctionFilter>());
+            });
             // builder.Services.AddSingleton(loggerFactory);
             builder.AddAzureOpenAIChatCompletion(deploymentName: settings.ChatDeploymentName, modelId: settings.ChatModel, endpoint: settings.EndPoint, apiKey: settings.Key, httpClient: _client);
 
@@ -101,32 +111,10 @@ namespace SpeechAnalyticsLibrary
          var plugin = KernelPluginFactory.CreateFromFunctions("YAMLPlugins", yamlPrompts.Select(y => y.Value).ToArray());
          sk.Plugins.Add(plugin);
 
-         if (!string.IsNullOrWhiteSpace(settings.Key))
-         {
-            openAIClient = new OpenAIClient(new Uri(settings.EndPoint), new AzureKeyCredential(settings.Key));
-         }
-         else
-         {
-            openAIClient = new OpenAIClient(new Uri(settings.EndPoint), new DefaultAzureCredential());
-         }
-
-
-#pragma warning disable SKEXP0004 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-         sk.FunctionInvoked += Sk_FunctionInvoked;
-         sk.FunctionInvoking += Sk_FunctionInvoking;
-
          return true;
       }
 
-      private void Sk_FunctionInvoking(object? sender, FunctionInvokingEventArgs e)
-      {
-         log.LogDebug($"{Environment.NewLine}INVOKING :{e.Function.Name}{Environment.NewLine}Arguments:{Environment.NewLine}{string.Join(Environment.NewLine, e.Arguments.Select(a => a.Key + ":" + a.Value.ToString()))}");
-      }
 
-      private void Sk_FunctionInvoked(object? sender, FunctionInvokedEventArgs e)
-      {
-         log.LogDebug($"{Environment.NewLine}INVOKED :{e.Function.Name}{Environment.NewLine}Arguments:{Environment.NewLine}{string.Join(Environment.NewLine, e.Arguments.Select(a => a.Key + ":" + a.Value.ToString()))}{Environment.NewLine}Result:{e.Result}");
-      }
 
 #pragma warning restore SKEXP0004 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
       public async Task<string> GetTranscriptionInsights(string transcription, string callid)
@@ -231,41 +219,6 @@ namespace SpeechAnalyticsLibrary
             log.LogError($"Error getting insights: {exe.Message}");
             return $"Sorry, I am having trouble answering your question. {exe.Message}";
          }
-      }
-#pragma warning disable SKEXP0003 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-      internal async Task<string> AskOpenAIAsync(string prompt, IAsyncEnumerable<MemoryQueryResult> memories)
-      {
-         log.LogDebug("Ask OpenAI Async A Question");
-
-
-         var content = "";
-         await foreach (MemoryQueryResult memoryResult in memories)
-         {
-            log.LogDebug("Memory Result = " + memoryResult.Metadata.Description);
-            content += memoryResult.Metadata.Description;
-         };
-
-         var chatCompletionsOptions = GetChatCompletionsOptions(content, prompt);
-         var completionsResponse = await openAIClient.GetChatCompletionsAsync(chatCompletionsOptions);
-         string completion = completionsResponse.Value.Choices[0].Message.Content;
-
-         return completion;
-      }
-
-      public ChatCompletionsOptions GetChatCompletionsOptions(string content, string prompt)
-      {
-         var opts = new ChatCompletionsOptions()
-         {
-            Messages =
-                  {
-                      new ChatRequestSystemMessage(@"You are a document answering bot.  You will be provided with information from a document, and you are to answer the question based on the content provided.  Your are not to make up answers. Use the content provided to answer the question."),
-                      new ChatRequestUserMessage(@"Content = " + content),
-                      new ChatRequestUserMessage(@"Question = " + prompt),
-                  },
-         };
-         opts.DeploymentName = settings.ChatDeploymentName;
-
-         return opts;
       }
    }
 }

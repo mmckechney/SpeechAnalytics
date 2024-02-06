@@ -1,13 +1,16 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using Microsoft.SemanticKernel;
 using Spectre.Console;
 using SpeechAnalyticsLibrary;
 using SpeechAnalyticsLibrary.Models;
 using System.Text.Json;
+using YamlDotNet.Serialization;
 
 namespace SpeechAnalytics
 {
+#pragma warning disable SKEXP0004 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 
    public class Program
    {
@@ -20,6 +23,7 @@ namespace SpeechAnalytics
       private static IdentityHelper identityHelper;
       private static CosmosHelper cosmosHelper;
       private static SpeechDiarization speechD;
+      private static IFunctionFilter functionFilter;
       private static IConfigurationRoot config;
       private static ILogger log;
       private static SkAi skAi;
@@ -59,7 +63,8 @@ namespace SpeechAnalytics
          identityHelper = new IdentityHelper(logFactory.CreateLogger<IdentityHelper>());
          fileHandler = new FileHandling(logFactory.CreateLogger<FileHandling>(), identityHelper);
          cosmosHelper = new CosmosHelper(logFactory.CreateLogger<CosmosHelper>(), settings, semanticMemory);
-         skAi = new SkAi(logFactory.CreateLogger<SkAi>(), config, logFactory, settings, semanticMemory, cosmosHelper, loglevel);
+         functionFilter = new FunctionFilter(new LoggerFactory().CreateLogger<FunctionFilter>());
+         skAi = new SkAi(logFactory.CreateLogger<SkAi>(), config, logFactory, settings, semanticMemory, cosmosHelper, loglevel, functionFilter);
          batch = new BatchTranscription(logFactory.CreateLogger<BatchTranscription>(), fileHandler, skAi, settings);
          speechD = new SpeechDiarization(logFactory.CreateLogger<SpeechDiarization>(), settings);
 
