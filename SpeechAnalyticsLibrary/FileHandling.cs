@@ -14,6 +14,25 @@
          this.log = log;
          this.identityHelper = identityHelper;
       }
+
+      public async Task<List<string>> GetListOfAudioFilesInContainer(string sourceContainerUrl)
+      {
+         try
+         {
+            List<string> files = new();
+            BlobContainerClient containerClient = GetContainerClient(sourceContainerUrl);
+            await foreach (var blob in containerClient.GetBlobsAsync())
+            {
+               files.Add(blob.Name);
+            }
+            return files;
+         }
+         catch (Exception exe)
+         {
+            log.LogError($"Error: {exe.Message}");
+            return new List<string>();
+         }
+      }
       public async Task<string> UploadBlobForTranscription(FileInfo file, string sourceContainerUrl)
       {
          try

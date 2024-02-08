@@ -24,15 +24,33 @@ namespace SpeechAnalyticsLibrary
       private static HttpClient client = new HttpClient();
       public async Task<TranscriptionResponse?> StartBatchTranscription(string transcriptionEndpoint, string transcriptionKey, string sourceSas, string destinationSas, Uri? blobFile = null)
       {
-         var whisperUrl = await GetWhisperModel(transcriptionEndpoint, transcriptionKey);
+         var whisper = await GetWhisperModel(transcriptionEndpoint, transcriptionKey);
+         if (whisper.name != "")
+         {
+            logger.LogInformation($"Using Whisper model: {whisper}");
+         }
 
+         if(blobFile == null)
+         {
+            var containerFile = await fileHandler.GetListOfAudioFilesInContainer(sourceSas);
+            if (containerFile.Count == 0)
+            {
+               logger.LogError("No files found in container");
+               return null;
+            }
+            else
+            {
+               logger.LogInformation("Files to transcribe:");
+               containerFile.ForEach(c => logger.LogInformation(c, ConsoleColor.DarkYellow));
+            }
+         }
          var transcriptionReq = new Transcription()
          {
             DisplayName = Guid.NewGuid().ToString(),
             Locale = "en-US",
             Model = new EntityReference()
             {
-               Self = new Uri(whisperUrl)
+               Self = new Uri(whisper.url)
             },
             Properties = new TranscriptionProperties()
             {
@@ -135,7 +153,7 @@ namespace SpeechAnalyticsLibrary
                      Thread.Sleep(sleepTime);
                   }
                   var status = resObj?.Status?.ToLower();
-                  switch (status)
+                   switch (status)
                   {
                      case "succeeded":
                         logger.LogInformation("\tTranscription complete");
@@ -258,7 +276,7 @@ namespace SpeechAnalyticsLibrary
          }
       }
 
-      public async Task<string> GetWhisperModel(string operationUrl, string transcriptionKey, string url = "")
+      public async Task<(string name, string url)> GetWhisperModel(string operationUrl, string transcriptionKey, string url = "")
       {
          try
          {
@@ -285,20 +303,20 @@ namespace SpeechAnalyticsLibrary
                   {
                      return await GetWhisperModel(operationUrl, transcriptionKey, models.NextLink);
                   }
-                  return whisper.Self;
+                  return (whisper.DisplayName,whisper.Self);
                }
                else
                {
                   logger.LogInformation($"Status code: {response.StatusCode}");
                   logger.LogError(result);
-                  return string.Empty;
+                  return (string.Empty, string.Empty);
                }
             }
          }
          catch (Exception exe)
          {
             logger.LogError($"Error: {exe.Message}");
-            return string.Empty;
+            return (string.Empty, string.Empty);
          }
       }
    }
