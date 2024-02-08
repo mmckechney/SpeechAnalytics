@@ -226,9 +226,9 @@ namespace SpeechAnalytics
                   log.LogInformation("");
                   log.LogInformation("");
                   log.LogInformation($"Analysis for: {insightObj.CallId}", ConsoleColor.DarkCyan);
-                  log.LogInformation("Setiment:", ConsoleColor.Cyan);
+                  log.LogInformation("Sentiment:", ConsoleColor.Cyan);
                   log.LogInformation($"  - " + insightObj.Sentiment);
-                  log.LogInformation("Setiment Examples:", ConsoleColor.Cyan);
+                  log.LogInformation("Sentiment Examples:", ConsoleColor.Cyan);
                   log.LogInformation($"  - " + string.Join($"{Environment.NewLine}  - ", insightObj.SentimentExamples));
                   log.LogInformation("Action Items:", ConsoleColor.Cyan);
                   log.LogInformation($"  - " + string.Join($"{Environment.NewLine}  - ", insightObj.FollowUpActions));
