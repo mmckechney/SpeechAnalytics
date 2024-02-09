@@ -5,7 +5,6 @@ using SpeechAnalyticsLibrary;
 
 namespace SpeechAnalyticsLibrary
 {
-
    public sealed class CustomConsoleFormatter : ConsoleFormatter
    {
       public CustomConsoleFormatter() : base("custom")
@@ -15,24 +14,26 @@ namespace SpeechAnalyticsLibrary
       public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter)
       {
          (var color, var level) = LogLevelShort(logEntry.LogLevel);
-         switch (logEntry.LogLevel)
+
+         var messages = logEntry.State.ToString().Split("|", StringSplitOptions.RemoveEmptyEntries);
+         string parsedMessage = "";
+
+         if (logEntry.LogLevel != LogLevel.Information)
          {
-            case LogLevel.Information:
-               (Console.ForegroundColor, string message) = GetLogEntryColor(logEntry.State.ToString());
-               Console.WriteLine($"{message}");
-               Console.ResetColor();
-               break;
-            default:
-               Console.Write("[");
-               Console.ForegroundColor = color;
-               Console.Write($"{level}");
-               Console.ResetColor();
-               Console.Write("] ");
-               (Console.ForegroundColor, string message1) = GetLogEntryColor(logEntry.State.ToString());
-               Console.WriteLine($"{message1}");
-               Console.ResetColor();
-               break;
+            Console.Write("[");
+            Console.ForegroundColor = color;
+            Console.Write($"{level}");
+            Console.ResetColor();
+            Console.Write("] ");
          }
+         foreach (var msg in messages)
+         {
+            (Console.ForegroundColor, parsedMessage) = GetLogEntryColor(msg);
+            Console.Write($"{parsedMessage} ");
+            Console.ResetColor();
+         }
+         Console.WriteLine();
+
       }
       private (ConsoleColor, string) LogLevelShort(LogLevel level)
       {
@@ -74,38 +75,75 @@ namespace SpeechAnalyticsLibrary
    {
       public static void LogInformation(this ILogger logger, string message, ConsoleColor color)
       {
-         message = message + " **COLOR:" + color.ToString();
-         logger.LogInformation(message);
+         logger.LogInformation(FormatMessage(message, color));
       }
 
       public static void LogDebug(this ILogger logger, string message, ConsoleColor color)
       {
-         message = message + " **COLOR:" + color.ToString();
-         logger.LogDebug(message);
+         logger.LogDebug(FormatMessage(message, color));
       }
 
       public static void LogError(this ILogger logger, string message, ConsoleColor color)
       {
-         message = message + " **COLOR:" + color.ToString();
-         logger.LogError(message);
+         logger.LogError(FormatMessage(message, color));
       }
 
       public static void LogWarning(this ILogger logger, string message, ConsoleColor color)
       {
-         message = message + " **COLOR:" + color.ToString();
-         logger.LogWarning(message);
+         logger.LogWarning(FormatMessage(message, color));
       }
 
       public static void LogCritical(this ILogger logger, string message, ConsoleColor color)
       {
-         message = message + " **COLOR:" + color.ToString();
-         logger.LogCritical(message);
+         logger.LogCritical(FormatMessage(message, color));
       }
 
       public static void LogTrace(this ILogger logger, string message, ConsoleColor color)
       {
-         message = message + " **COLOR:" + color.ToString();
-         logger.LogTrace(message);
+         logger.LogTrace(FormatMessage(message, color));
+      }
+
+      public static void LogInformation(this ILogger logger, Dictionary<string, ConsoleColor> messages)
+      {
+         logger.LogInformation(FormatMessages(messages));
+      }
+
+      public static void LogDebug(this ILogger logger, Dictionary<string, ConsoleColor> messages)
+      {
+         logger.LogDebug(FormatMessages(messages));
+      }
+
+      public static void LogError(this ILogger logger, Dictionary<string, ConsoleColor> messages)
+      {
+         logger.LogError(FormatMessages(messages));
+      }
+
+      public static void LogWarning(this ILogger logger, Dictionary<string, ConsoleColor> messages)
+      {
+         logger.LogWarning(FormatMessages(messages));
+      }
+
+      public static void LogCritical(this ILogger logger, Dictionary<string, ConsoleColor> messages)
+      {
+         logger.LogCritical(FormatMessages(messages));
+      }
+
+      public static void LogTrace(this ILogger logger, Dictionary<string, ConsoleColor> messages)
+      {
+         logger.LogTrace(FormatMessages(messages));
+      }
+      private static string FormatMessages(Dictionary<string, ConsoleColor> messages)
+      {
+         var formattedMessages = string.Empty;
+         foreach (var message in messages)
+         {
+            formattedMessages += $"{message.Key} **COLOR:{message.Value.ToString()}|";
+         }
+         return formattedMessages;
+      }
+      private static string FormatMessage(string message, ConsoleColor color)
+      {
+         return message + " **COLOR:" + color.ToString();
       }
 
    }
