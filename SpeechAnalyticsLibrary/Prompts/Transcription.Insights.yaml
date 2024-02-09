@@ -57,3 +57,12 @@ execution_settings:
   default: 
     max_tokens: 10000
     temperature: 0.0
+  gpt-4-turbo:
+    model_id:     gpt-4-1106-preview
+    max_tokens:   1000
+    temperature:  0.0
+  gpt-4-32k:
+    model_id:     gpt-4-32k
+    max_tokens:   1000
+    temperature:  0.0
+
