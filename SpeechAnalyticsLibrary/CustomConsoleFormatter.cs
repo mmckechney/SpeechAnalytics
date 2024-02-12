@@ -64,7 +64,7 @@ namespace SpeechAnalyticsLibrary
             var colorString = message.Split("**COLOR:")[1];
             if (Enum.TryParse(colorString, out color))
             {
-               return (color, message.Split("**COLOR:")[0].Trim());
+               return (color, message.Split("**COLOR:")[0]);
             }
          }
          return (color, message);
