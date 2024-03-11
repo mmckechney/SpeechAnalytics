@@ -101,7 +101,7 @@ namespace SpeechAnalytics
                   log.LogInformation($"{tmp.PadRight(pad)} {file.Value}");
                }
                log.LogInformation("");
-               log.LogInformation($"Or just start typing to ask a question.", ConsoleColor.Green);
+               log.LogInformation($"Or just start typing to ask a question (be sure to include the filename of the transcription!).", ConsoleColor.Green);
 
                Console.WriteLine();
                var selection = Console.ReadLine();
@@ -111,9 +111,12 @@ namespace SpeechAnalytics
                {
                   log.LogInformation("");
                   log.LogInformation("Getting your response...", ConsoleColor.Cyan);
-                  var reply = await skAi.AskQuestions(selection);
                   log.LogInformation("Answer:", ConsoleColor.Cyan);
-                  log.LogInformation(reply);
+                  await foreach (var bit in skAi.AskQuestionsStreaming(selection))
+                  {
+                     Console.Write(bit);
+                  }
+                  log.LogInformation("");
                   log.LogInformation("");
                   log.LogInformation("Press any key to continue...", ConsoleColor.Cyan);
                   Console.ReadKey();

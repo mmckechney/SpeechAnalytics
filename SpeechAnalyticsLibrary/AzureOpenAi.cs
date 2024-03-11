@@ -220,6 +220,26 @@ namespace SpeechAnalyticsLibrary
             return $"Sorry, I am having trouble answering your question. {exe.Message}";
          }
       }
+
+      public async IAsyncEnumerable<string> AskQuestionsStreaming(string userQuestion)
+      {
+
+         var result = await sk.InvokeAsync(yamlPrompts["CosmosDb_QueryGenerator"], new() { { "question", userQuestion } });
+         var cosmosResults = await cosmosHelper.GetQueryResults(result.GetValue<string>());
+         if (cosmosResults.Length == 0)
+         {
+            yield return "Sorry, I was unable to find an answer. Please try asking in a different way.";
+         }
+         else
+         {
+            var questionAnswer = sk.InvokeStreamingAsync(yamlPrompts["Ask_Question"], new() { { "question", userQuestion }, { "data", cosmosResults } });
+            await foreach (var item in questionAnswer)
+            {
+               yield return item.ToString();
+            }
+         }
+
+      }
    }
 }
 
