@@ -76,6 +76,7 @@ namespace SpeechAnalytics
          Console.ForegroundColor = ConsoleColor.Blue;
          AnsiConsole.Write(new FigletText($"Azure AI Speech Analytics"));
          Console.WriteLine("This demo tool will transcribe an audio file and analyze its contents for sentiment, action items and problems causes");
+         Console.WriteLine("Find the code here: https://github.com/mmckechney/SpeechAnalytics");
          Console.ForegroundColor = ConsoleColor.White;
 
          Dictionary<int, string> files;
