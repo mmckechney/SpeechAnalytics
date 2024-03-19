@@ -11,3 +11,10 @@ dotnet_diagnostic.CS8600.severity = none
 
 # CS8602: Dereference of a possibly null reference.
 dotnet_diagnostic.CS8602.severity = none
+
+
+dotnet_diagnostic.SKEXP0003.severity = warning
+dotnet_diagnostic.SKEXP0001.severity = warning
+dotnet_diagnostic.SKEXP0020.severity = warning
+dotnet_diagnostic.SKEXP0010.severity = warning
+dotnet_diagnostic.SKEXP0050.severity = warning
