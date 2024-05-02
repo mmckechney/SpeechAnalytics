@@ -23,7 +23,7 @@ namespace SpeechAnalytics
       private static IdentityHelper identityHelper;
       private static CosmosHelper cosmosHelper;
       private static SpeechDiarization speechD;
-      private static IFunctionFilter functionFilter;
+      private static IFunctionInvocationFilter functionFilter;
       private static IConfigurationRoot config;
       private static ILogger log;
       private static SkAi skAi;
@@ -63,7 +63,7 @@ namespace SpeechAnalytics
          identityHelper = new IdentityHelper(logFactory.CreateLogger<IdentityHelper>());
          fileHandler = new FileHandling(logFactory.CreateLogger<FileHandling>(), identityHelper);
          cosmosHelper = new CosmosHelper(logFactory.CreateLogger<CosmosHelper>(), settings, semanticMemory);
-         functionFilter = new FunctionFilter(new LoggerFactory().CreateLogger<FunctionFilter>());
+         functionFilter = new FunctionInvocationFilter(new LoggerFactory().CreateLogger<FunctionInvocationFilter>());
          skAi = new SkAi(logFactory.CreateLogger<SkAi>(), config, logFactory, settings, semanticMemory, cosmosHelper, loglevel, functionFilter);
          batch = new BatchTranscription(logFactory.CreateLogger<BatchTranscription>(), fileHandler, skAi, settings);
          speechD = new SpeechDiarization(logFactory.CreateLogger<SpeechDiarization>(), settings);

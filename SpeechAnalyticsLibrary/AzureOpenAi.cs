@@ -32,20 +32,20 @@ namespace SpeechAnalyticsLibrary
       HttpClient _client;
       private SemanticMemory skMemory;
       private CosmosHelper cosmosHelper;
-      private IFunctionFilter functionFilter;
+      private IFunctionInvocationFilter functionInvokeFilter;
 
-      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, SemanticMemory skMemory, CosmosHelper cosmosHelper, IFunctionFilter functionFilter) : this(log, config, loggerFactory, aiSettings, skMemory, cosmosHelper, LogLevel.Information, functionFilter)
+      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, SemanticMemory skMemory, CosmosHelper cosmosHelper, IFunctionInvocationFilter functionInvokeFilter) : this(log, config, loggerFactory, aiSettings, skMemory, cosmosHelper, LogLevel.Information, functionInvokeFilter)
       {
 
       }
-      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, SemanticMemory skMemory, CosmosHelper cosmosHelper, LogLevel logLevel, IFunctionFilter functionFilter)
+      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, SemanticMemory skMemory, CosmosHelper cosmosHelper, LogLevel logLevel, IFunctionInvocationFilter functionInvokeFilter)
       {
          settings = aiSettings.AzureOpenAi;
          _config = config;
          this.log = log;
          this.skMemory = skMemory;
          this.cosmosHelper = cosmosHelper;
-         this.functionFilter = functionFilter;
+         this.functionInvokeFilter = functionInvokeFilter;
          this.loggerFactory = LoggerFactory.Create(builder =>
          {
             builder.SetMinimumLevel(logLevel);
@@ -80,9 +80,9 @@ namespace SpeechAnalyticsLibrary
          if (settings != null)
          {
             var builder = Kernel.CreateBuilder();
-            builder.Services.AddSingleton<IFunctionFilter, FunctionFilter>(s =>
+            builder.Services.AddSingleton<IFunctionInvocationFilter, FunctionInvocationFilter>(s =>
             {
-               return new FunctionFilter(loggerFactory.CreateLogger<FunctionFilter>());
+               return new FunctionInvocationFilter(loggerFactory.CreateLogger<FunctionInvocationFilter>());
             });
             // builder.Services.AddSingleton(loggerFactory);
             builder.AddAzureOpenAIChatCompletion(deploymentName: settings.ChatDeploymentName, modelId: settings.ChatModel, endpoint: settings.EndPoint, apiKey: settings.Key, httpClient: _client);
