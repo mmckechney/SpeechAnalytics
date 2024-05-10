@@ -18,20 +18,20 @@
    </ItemGroup>
 
    <ItemGroup>
-   <PackageReference Include="Microsoft.SemanticKernel" Version="1.10.0" />
-   <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.10.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.10.0" />
-   <PackageReference Include="Microsoft.SemanticKernel.Core" Version="1.10.0" />
-   <PackageReference Include="Microsoft.SemanticKernel.Planners.OpenAI" Version="1.10.0-preview" />
-   <PackageReference Include="Microsoft.SemanticKernel.Plugins.Core" Version="1.10.0-alpha" />
-   <PackageReference Include="Microsoft.SemanticKernel.Plugins.Document" Version="1.10.0-alpha" />
-   <PackageReference Include="Microsoft.SemanticKernel.Plugins.Memory" Version="1.10.0-alpha" />
-   <PackageReference Include="Microsoft.SemanticKernel.Plugins.MsGraph" Version="1.10.0-alpha" />
-   <PackageReference Include="Microsoft.SemanticKernel.Plugins.Web" Version="1.10.0-alpha" />
-   <PackageReference Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" Version="1.10.0" />
-   <PackageReference Include="Microsoft.SemanticKernel.Planners.Handlebars" Version="1.10.0-preview" />
-   <PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureAISearch" Version="1.10.0-alpha" />
-      <PackageReference Include="Azure.Identity" Version="1.11.2" />
+   <PackageReference Include="Microsoft.SemanticKernel" Version="1.11.0" />
+   <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.11.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.11.0" />
+   <PackageReference Include="Microsoft.SemanticKernel.Core" Version="1.11.0" />
+   <PackageReference Include="Microsoft.SemanticKernel.Planners.OpenAI" Version="1.11.0-preview" />
+   <PackageReference Include="Microsoft.SemanticKernel.Plugins.Core" Version="1.11.0-alpha" />
+   <PackageReference Include="Microsoft.SemanticKernel.Plugins.Document" Version="1.11.0-alpha" />
+   <PackageReference Include="Microsoft.SemanticKernel.Plugins.Memory" Version="1.11.0-alpha" />
+   <PackageReference Include="Microsoft.SemanticKernel.Plugins.MsGraph" Version="1.11.0-alpha" />
+   <PackageReference Include="Microsoft.SemanticKernel.Plugins.Web" Version="1.11.0-alpha" />
+   <PackageReference Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" Version="1.11.0" />
+   <PackageReference Include="Microsoft.SemanticKernel.Planners.Handlebars" Version="1.11.0-preview" />
+   <PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureAISearch" Version="1.11.0-alpha" />
+      <PackageReference Include="Azure.Identity" Version="1.11.3" />
       <PackageReference Include="Azure.Storage.Blobs" Version="12.19.1" />
       <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.39.1" />
       <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.37.0" />
