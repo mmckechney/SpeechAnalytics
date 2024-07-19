@@ -22,7 +22,7 @@
       <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
       <PackageReference Include="Azure.Storage.Blobs" Version="12.21.0" />
-      <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.3.0" />
+      <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.3.1" />
    </ItemGroup>
    <ItemGroup>
      <ProjectReference Include="..\SpeechAnalyticsLibrary\SpeechAnalyticsLibrary.csproj" />
