@@ -1,40 +1,40 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+   <PropertyGroup>
+      <TargetFramework>net8.0</TargetFramework>
+      <ImplicitUsings>enable</ImplicitUsings>
+      <Nullable>enable</Nullable>
+   </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Prompts\Ask.Question.yaml" />
-    <None Remove="Prompts\CosmosDb.QueryGenerator.yaml" />
-    <None Remove="Prompts\Transcription.Insights.yaml" />
-    <None Remove="Prompts\Transcription.SpeakerId.yaml" />
-  </ItemGroup>
+   <ItemGroup>
+      <None Remove="Prompts\Ask.Question.yaml" />
+      <None Remove="Prompts\CosmosDb.QueryGenerator.yaml" />
+      <None Remove="Prompts\Transcription.Insights.yaml" />
+      <None Remove="Prompts\Transcription.SpeakerId.yaml" />
+   </ItemGroup>
 
    <ItemGroup>
       <EmbeddedResource Include="Prompts\**\*.yaml" />
    </ItemGroup>
 
    <ItemGroup>
-   <PackageReference Include="Microsoft.SemanticKernel" Version="1.17.1" />
-   <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.17.1" />
-    <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.17.1" />
-   <PackageReference Include="Microsoft.SemanticKernel.Core" Version="1.17.1" />
-   <PackageReference Include="Microsoft.SemanticKernel.Planners.OpenAI" Version="1.17.1-preview" />
-   <PackageReference Include="Microsoft.SemanticKernel.Plugins.Core" Version="1.17.1-alpha" />
-   <PackageReference Include="Microsoft.SemanticKernel.Plugins.Document" Version="1.17.1-alpha" />
-   <PackageReference Include="Microsoft.SemanticKernel.Plugins.Memory" Version="1.17.1-alpha" />
-   <PackageReference Include="Microsoft.SemanticKernel.Plugins.MsGraph" Version="1.17.1-alpha" />
-   <PackageReference Include="Microsoft.SemanticKernel.Plugins.Web" Version="1.17.1-alpha" />
-   <PackageReference Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" Version="1.17.1" />
-   <PackageReference Include="Microsoft.SemanticKernel.Planners.Handlebars" Version="1.17.1-preview" />
-   <PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureAISearch" Version="1.17.1-alpha" />
+      <PackageReference Include="Microsoft.SemanticKernel" Version="1.18.0-rc" />
+      <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.18.0-rc" />
+      <PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureOpenAI" Version="1.18.0-rc" />
+      <PackageReference Include="Microsoft.SemanticKernel.Core" Version="1.18.0-rc" />
+      <PackageReference Include="Microsoft.SemanticKernel.Planners.OpenAI" Version="1.18.0-preview" />
+      <PackageReference Include="Microsoft.SemanticKernel.Plugins.Core" Version="1.18.0-alpha" />
+      <PackageReference Include="Microsoft.SemanticKernel.Plugins.Document" Version="1.18.0-alpha" />
+      <PackageReference Include="Microsoft.SemanticKernel.Plugins.Memory" Version="1.18.0-alpha" />
+      <PackageReference Include="Microsoft.SemanticKernel.Plugins.MsGraph" Version="1.18.0-alpha" />
+      <PackageReference Include="Microsoft.SemanticKernel.Plugins.Web" Version="1.18.0-alpha" />
+      <PackageReference Include="Microsoft.SemanticKernel.PromptTemplates.Handlebars" Version="1.18.0-rc" />
+      <PackageReference Include="Microsoft.SemanticKernel.Planners.Handlebars" Version="1.18.0-preview" />
+      <PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureAISearch" Version="1.18.0-alpha" />
       <PackageReference Include="Azure.Identity" Version="1.12.0" />
       <PackageReference Include="Azure.Storage.Blobs" Version="12.21.2" />
       <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.42.0" />
-      <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.38.0" />
+      <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.40.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.2" />
       <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
