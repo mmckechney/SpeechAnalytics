@@ -162,7 +162,7 @@ namespace SpeechAnalytics
                {
 
                   var existingInsightObj = await cosmosHelper.GetAnalysis(transcription.source);
-                  if (existingInsightObj != null && reask == true)
+                   if (existingInsightObj != null && reask == true)
                   {
                      insightObj = existingInsightObj;
                      if (transcriptions.Count == 1)

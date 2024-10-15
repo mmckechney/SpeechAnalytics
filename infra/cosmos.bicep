@@ -103,3 +103,4 @@ output cosmosAccountName string = cosmosAccount.name
 output cosmosContainerName string = cosmosContainer.name
 output cosmosDataBaseName string = cosmosDatabase.name
 output cosmosSecretName string = cosmosConnection.name
+output cosmosResourceId string = cosmosAccount.id

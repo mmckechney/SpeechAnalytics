@@ -43,7 +43,7 @@
    }
    public class CosmosDB
    {
-      public string ConnectionString { get; set; }
+      public string AccountEndpoint { get; set; }
       public string ContainerName { get; set; }
       public string DatabaseName { get; set; }
    }

@@ -121,7 +121,7 @@ namespace SpeechAnalyticsLibrary
       {
          try
          {
-            var result = await sk.InvokeAsync(yamlPrompts["Transcription_Insights"], new() { { "transcription", transcription }, { "callid", callid } });
+          var result = await sk.InvokeAsync(yamlPrompts["Transcription_Insights"], new() { { "transcription", transcription }, { "callid", callid } });
             return result.GetValue<string>();
          }
          catch (HttpOperationException httpExe)

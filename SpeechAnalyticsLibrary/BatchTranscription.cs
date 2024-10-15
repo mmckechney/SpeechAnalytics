@@ -24,11 +24,11 @@ namespace SpeechAnalyticsLibrary
       private static HttpClient client = new HttpClient();
       public async Task<TranscriptionResponse?> StartBatchTranscription(string transcriptionEndpoint, string transcriptionKey, string sourceSas, string destinationSas, Uri? blobFile = null)
       {
-         var whisper = await GetWhisperModel(transcriptionEndpoint, transcriptionKey);
-         if (whisper.name != "")
-         {
-            logger.LogInformation($"Using Whisper model: {whisper}");
-         }
+         //var whisper = await GetWhisperModel(transcriptionEndpoint, transcriptionKey);
+         //if (whisper.name != "")
+         //{
+         //   logger.LogInformation($"Using Whisper model: {whisper}");
+         //}
 
          if(blobFile == null)
          {
@@ -48,10 +48,10 @@ namespace SpeechAnalyticsLibrary
          {
             DisplayName = Guid.NewGuid().ToString(),
             Locale = "en-US",
-            Model = new EntityReference()
-            {
-               Self = new Uri(whisper.url)
-            },
+            //Model = new EntityReference()
+            //{
+            //   Self = new Uri(whisper.url)
+            //},
             Properties = new TranscriptionProperties()
             {
                TimeToLive = "PT4H",
@@ -165,7 +165,7 @@ namespace SpeechAnalyticsLibrary
                         logger.LogInformation("\tTranscription in progress");
                         break;
                      case "failed":
-                        logger.LogError($"\tTranslation failed: {resObj.Properties?.Error?.Message}");
+                        logger.LogError($"\tTranscription failed: {resObj.Properties?.Error?.Message}");
                         return null;
                      default:
                         logger.LogInformation($"\tStatus: {resObj?.Status}");

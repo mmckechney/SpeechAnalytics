@@ -42,14 +42,14 @@ param (
 )
 $error.Clear()
 $ErrorActionPreference = 'Stop'
-
+$userIdGuid = az ad signed-in-user show -o tsv --query id
 
 Write-Host -ForegroundColor Green "Creating resource group $resourceGroup and required resources in $location"
 $result = az deployment sub create --location $location --template-file .\infra\main.bicep --parameters resourceGroupName=$resourceGroup storageAccountName=$storageAcctName `
     aiServicesAccountName=$aiServicesAcctName location=$location `
     azureOpenAiEndpoint=$azureOpenAiEndpoint azureOpenAiKey=$azureOpenAiKey `
     functionAppName=$functionAppName cosmosAccountName=$cosmosAccountName `
-    keyVaultName=$keyVaultName aiSearchName=$aiSearchName | ConvertFrom-Json -Depth 10
+    keyVaultName=$keyVaultName aiSearchName=$aiSearchName userIdGuid=$userIdGuid| ConvertFrom-Json -Depth 10
 
 
 Write-Host -ForegroundColor Green "Deployment Result"
@@ -66,7 +66,7 @@ Write-Host -ForegroundColor Green "Getting AI Search account account key"
 $aiSearchKey = az search admin-key show --resource-group $resourceGroup  --service-name $aiSearchName -o tsv --query primaryKey
 
 Write-Host -ForegroundColor Green "Getting Cosmos Connection String"
-$cosmosConnection = az cosmosdb keys list --name $result.properties.outputs.cosmosAccountName.value --resource-group $resourceGroup --type connection-strings -o tsv --query connectionStrings[0].connectionString
+$cosmosAccountEndpoint = az cosmosdb show --name --name $result.properties.outputs.cosmosAccountName.value --resource-group $resourceGroup -o tsv --query readLocations[0].documentEndpoint
 
 Write-Host -ForegroundColor Green "Getting Storage Connection  and SAS Urls"
 $storageKey = az storage account keys list -n $storageAcctName -g $resourceGroup --query [0].value -o tsv
@@ -87,7 +87,7 @@ $transcriptSas = "https://$storageAcctName.blob.core.windows.net/$($transcriptCo
     "AiServices" = @{
         "Endpoint" = $result.properties.outputs.aiServicesEndpoint.value
         "Key" = $aiServicesKey
-        "ApiVersion" = "v3.2-preview.1"
+        "ApiVersion" = "v3.2"
         "Region" = $location
     }
     "Storage" = @{
@@ -108,7 +108,7 @@ $transcriptSas = "https://$storageAcctName.blob.core.windows.net/$($transcriptCo
         "Key" = $aiSearchKey
     }
     "CosmosDb" = @{
-        "ConnectionString" = $cosmosConnection
+        "AccountEndpoint" = $cosmosAccountEndpoint
         "ContainerName" = $result.properties.outputs.cosmosContainerName.value
         "DatabaseName" = $result.properties.outputs.cosmosDataBaseName.value
     }
@@ -131,7 +131,7 @@ $functionSettings = @{
     
         "AiServices:Endpoint" = $result.properties.outputs.aiServicesEndpoint.value
         "AiServices:Key" = $aiServicesKey
-        "AiServices:ApiVersion" = "v3.2-preview.1"
+        "AiServices:ApiVersion" = "v3.2"
         "AiServices:Region" = $location
 
         "Storage:SourceContainerUrl" = $audioSas
@@ -147,7 +147,7 @@ $functionSettings = @{
         "AiSearch:Endpoint" = "https://$($aiSearchName).search.windows.net"
         "AiSearch:Key" = $aiSearchKey
 
-        "CosmosDb:ConnectionString" = $cosmosConnection
+        "CosmosDb:AccountEndpoint" = $cosmosAccountEndpoint
         "CosmosDb:ContainerName" = $result.properties.outputs.cosmosContainerName.value
         "CosmosDb:DatabaseName" = $result.properties.outputs.cosmosDataBaseName.value
     }
@@ -159,13 +159,28 @@ $functionSettings = @{
 
  if(!$?){ exit }
 
- Push-Location .\CallCenterFunction
- Write-Host -ForegroundColor Green "Deploying function app..."
- func azure functionapp publish $functionAppName 
- Pop-Location
+#  Push-Location .\CallCenterFunction
+#  Write-Host -ForegroundColor Green "Deploying function app..."
+#  func azure functionapp publish $functionAppName 
+#  Pop-Location
 
 if(!$?){ exit }
 
+$cid = az cosmosdb show --resource-group $resourceGroup --name $cosmosAccountName -o tsv --query id
+Write-Output "CosmosDB Resource ID $cid"
+$ids = az cosmosdb sql role definition list --resource-group $resourceGroup --account-name $cosmosAccountName -o tsv --query "[].id" 
+Write-Output "CosmosDB Role Definitions ID $ids"
+foreach($id in $ids){
+    az cosmosdb sql role assignment create `
+    --resource-group $resourceGroup `
+    --account-name $cosmosAccountName `
+    --role-definition-id $id `
+    --principal-id $userIdGuid `
+    --scope $cid
+}
+
+
+if(!$?){ exit }
 
 Write-Host -ForegroundColor Green "Building console app..."
 dotnet build --no-incremental .\SpeechAnalytics\SpeechAnalytics.csproj -o .\SpeechAnalytics\bin\demo

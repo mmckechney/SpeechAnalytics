@@ -65,4 +65,7 @@ execution_settings:
     model_id:     gpt-4-32k
     max_tokens:   1000
     temperature:  0.0
-
+  gpt-4o:
+    model_id:     gpt-4o
+    max_tokens:   4000
+    temperature:  0.0

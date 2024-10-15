@@ -12,6 +12,7 @@ param azureOpenAiEndpoint string
 param cosmosAccountName string
 param keyVaultName string
 param aiSearchName string
+param userIdGuid string
 
 
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
@@ -141,12 +142,27 @@ module keyvault 'keyvault.bicep' = {
     ]
 }
 
+module useridentity 'useridentity.bicep' = {
+    scope: resourceGroup(resourceGroupName)
+    name: 'useridentity'
+    params:{
+        userIdGuid: userIdGuid
+        resourceGroupName: resourceGroupName
+        cosmosAccountName: cosmosDB.outputs.cosmosAccountName
+    }
+    dependsOn: [
+        rg
+        cosmosDB
+    ]
+}
+
 output aiServicesEndpoint string = aiServices.outputs.endpoint
 output location string = aiServices.outputs.location
 output cosmosEndpoint string = cosmosDB.outputs.cosmosAccountEndpoint
 output cosmosAccountName string = cosmosDB.outputs.cosmosAccountName
 output cosmosContainerName string = cosmosDB.outputs.cosmosContainerName
 output cosmosDataBaseName string = cosmosDB.outputs.cosmosDataBaseName
+output cosmosResourceId string = cosmosDB.outputs.cosmosResourceId
 output audioContainerName string = storage.outputs.audioContainerName
 output transcriptContainerName string = storage.outputs.transcriptContainerName
 

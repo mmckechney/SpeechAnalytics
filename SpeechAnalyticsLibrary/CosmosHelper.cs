@@ -1,8 +1,11 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
+using Microsoft.Graph;
 using SpeechAnalyticsLibrary.Models;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 using System.Text.Json;
+using Azure.Identity;
 
 namespace SpeechAnalyticsLibrary
 {
@@ -16,7 +19,7 @@ namespace SpeechAnalyticsLibrary
       {
          this.log = log;
          this.settings = settings.CosmosDB;
-         client = new CosmosClient(this.settings.ConnectionString);
+         client = new CosmosClient(settings.CosmosDB.AccountEndpoint, new DefaultAzureCredential());
          this.skMemory = skMemory;
       }
       public async Task<bool> SaveAnalysis(InsightResults insights)
