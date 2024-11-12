@@ -23,7 +23,7 @@ input_variables:
    is_required: true
 execution_settings:
   default: 
-    max_tokens: 10000
+    max_tokens: 4000
     temperature: 0.
   gpt-4-turbo:
     model_id:     gpt-4-1106-preview

@@ -174,11 +174,11 @@
          BlobContainerClient containerClient;
          if (string.IsNullOrWhiteSpace(signature))
          {
-            containerClient = new BlobContainerClient(containerUrl, identityHelper.TokenCredential);
+            containerClient = new BlobContainerClient(containerUrl, new Azure.Identity.DefaultAzureCredential());
          }
          else
          {
-            containerClient = new BlobContainerClient(containerUrl, new AzureSasCredential(signature));
+            containerClient = new BlobContainerClient(containerUrl, new Azure.Identity.DefaultAzureCredential());
          }
 
          return containerClient;
