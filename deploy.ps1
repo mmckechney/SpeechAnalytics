@@ -7,32 +7,17 @@ param (
     $location,
     [Parameter(Mandatory = $True)]
     [string]
-    $aiServicesAcctName,
-    [Parameter(Mandatory = $True)]
-    [string]
     $functionAppName,
-    [Parameter(Mandatory = $True)]
-    [string]
-    $cosmosAccountName,
-    [Parameter(Mandatory = $True)]
-    [string]
-    $storageAcctName,
     [Parameter(Mandatory = $True)]
     [string]
     $azureOpenAiEndpoint,
     [Parameter(Mandatory = $True)]
     [string]
     $azureOpenAiKey,
-    [Parameter(Mandatory = $True)]
     [string]
-    $keyVaultName,
-    [Parameter(Mandatory = $True)]
+    $chatModel = "gpt-4o",
     [string]
-    $aiSearchName,
-    [string]
-    $chatModel = "gpt-4-32k",
-    [string]
-    $chatDeploymentName = "gpt-4-32k",
+    $chatDeploymentName = "gpt-4o",
     [string]
     $embeddingModel = "text-embedding-ada-002",
     [string]
@@ -44,8 +29,32 @@ $error.Clear()
 $ErrorActionPreference = 'Stop'
 $userIdGuid = az ad signed-in-user show -o tsv --query id
 
-Write-Host -ForegroundColor Green "Creating resource group $resourceGroup and required resources in $location"
-$result = az deployment sub create --location $location --template-file .\infra\main.bicep --parameters resourceGroupName=$resourceGroup storageAccountName=$storageAcctName `
+$safeFuncAppName = $functionAppName.Substring(0, [math]::Min(13, ($functionAppName.ToLower() -replace '[-_]', '').Length))
+$aiServicesAcctName = "${functionAppName}-aiservices"
+$cosmosAccountName = "${functionAppName}-cosmos"
+$storageAcctName = "${safeFuncAppName}storage"
+$aiSearchName = "${safeFuncAppName}-search"
+$keyVaultName = "${functionAppName}-kv"
+
+Write-Host "Service Names:" -ForegroundColor Cyan
+Write-Host "Function App: $functionAppName" -ForegroundColor Green
+Write-Host "AI Services Account: $aiServicesAcctName" -ForegroundColor Green
+Write-Host "Cosmos Account: $cosmosAccountName" -ForegroundColor Green
+Write-Host "Storage Account: $storageAcctName" -ForegroundColor Green
+Write-Host "Search Account: $aiSearchName" -ForegroundColor Green
+Write-Host "Key Vault: $keyVaultName" -ForegroundColor Green
+
+Write-Host "Azure OpenAI Settings:" -ForegroundColor Cyan
+Write-Host "Azure Open AI Endpoint: $azureOpenAiEndpoint" -ForegroundColor Green
+Write-Host "Chat Model: $chatModel" -ForegroundColor Green
+Write-Host "Chat Deployment Name: $chatDeploymentName" -ForegroundColor Green
+Write-Host "Embedding Model: $embeddingModel" -ForegroundColor Green
+Write-Host "Embedding Deployment Name: $embeddingDeploymentName" -ForegroundColor Green
+
+
+
+Write-Host -ForegroundColor Cyan "Creating resource group $resourceGroup and required resources in $location" 
+$result = az deployment sub create --name $functionAppName --location $location --template-file .\infra\main.bicep --parameters resourceGroupName=$resourceGroup storageAccountName=$storageAcctName `
     aiServicesAccountName=$aiServicesAcctName location=$location `
     azureOpenAiEndpoint=$azureOpenAiEndpoint azureOpenAiKey=$azureOpenAiKey `
     functionAppName=$functionAppName cosmosAccountName=$cosmosAccountName `

@@ -40,7 +40,7 @@ module aiServices 'aiservices.bicep' = {
 	params: {
         location: location
 		aiServicesAccountName: aiServicesAccountName
-        keyVaultName: keyVaultName
+        keyVaultName: keyvault.name
         
 	}
     dependsOn: [
@@ -76,8 +76,6 @@ module roleassignment 'roleassignment.bicep' = {
     dependsOn: [
         rg
         keyvault
-        cosmosDB
-        aiServices
     ]
 }
 
@@ -106,7 +104,7 @@ module function 'function.bicep' = {
         cosmosDbContainerName: cosmosDB.outputs.cosmosContainerName
         cosmosDbName: cosmosDB.outputs.cosmosDataBaseName
         functionAppName: functionAppName
-        keyVaultName: keyVaultName
+        keyVaultName: keyvault.name
         aiServicesSecretName: aiServices.outputs.aiServicesSecretName
         audioSecretName: storage.outputs.audioSecretname
         transcriptionSecretName: storage.outputs.transcriptionSecretname
@@ -121,10 +119,6 @@ module function 'function.bicep' = {
     }
     dependsOn: [
         rg
-        aiServices
-        keyvault
-        cosmosDB
-        storage
     ]
 }
 
@@ -148,11 +142,9 @@ module useridentity 'useridentity.bicep' = {
     params:{
         userIdGuid: userIdGuid
         resourceGroupName: resourceGroupName
-        cosmosAccountName: cosmosDB.outputs.cosmosAccountName
     }
     dependsOn: [
         rg
-        cosmosDB
     ]
 }
 
