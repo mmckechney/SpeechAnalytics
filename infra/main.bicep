@@ -40,7 +40,7 @@ module aiServices 'aiservices.bicep' = {
 	params: {
         location: location
 		aiServicesAccountName: aiServicesAccountName
-        keyVaultName: keyvault.name
+        keyVaultName: keyVaultName
         
 	}
     dependsOn: [
@@ -71,11 +71,9 @@ module roleassignment 'roleassignment.bicep' = {
         aiServicesPrincipal: aiServices.outputs.aiServicesIdentityPrincipal
         blobContainerName: storage.outputs.audiofile_container
         functionAppPrincipal: function.outputs.functionPrincipalId
-        keyVaultName: keyVaultName
 	}
     dependsOn: [
         rg
-        keyvault
     ]
 }
 

@@ -1,9 +1,6 @@
 param (
     [Parameter(Mandatory = $True)]
     [string]
-    $resourceGroup, 
-    [Parameter(Mandatory = $True)]
-    [string]
     $location,
     [Parameter(Mandatory = $True)]
     [string]
@@ -27,16 +24,25 @@ param (
 )
 $error.Clear()
 $ErrorActionPreference = 'Stop'
-$userIdGuid = az ad signed-in-user show -o tsv --query id
+$userIdJson = az ad signed-in-user show
+$userIdJson = $userIdJson | ConvertFrom-Json
+$userIdGuid = $userIdJson.Id
+$userName = $userIdJson.userPrincipalName
 
-$safeFuncAppName = $functionAppName.Substring(0, [math]::Min(13, ($functionAppName.ToLower() -replace '[-_]', '').Length))
-$aiServicesAcctName = "${functionAppName}-aiservices"
-$cosmosAccountName = "${functionAppName}-cosmos"
+$resourceGroup = "${functionAppName}-rg"
+$safeFuncAppName =  $functionAppName.ToLower() -replace '[-_]', ''
+$safeFuncAppName  = $safeFuncAppName.Substring(0, [math]::Min(13, $safeFuncAppName.Length))
+$aiServicesAcctName = "${safeFuncAppName}-aiservices"
+$cosmosAccountName = "${safeFuncAppName}-cosmos"
 $storageAcctName = "${safeFuncAppName}storage"
 $aiSearchName = "${safeFuncAppName}-search"
-$keyVaultName = "${functionAppName}-kv"
+$keyVaultName = "${safeFuncAppName}-kv"
 
+
+Write-Host "Local user for Role Based Access:" -ForegroundColor Cyan
+Write-Host "User Name: $userName" -ForegroundColor Green
 Write-Host "Service Names:" -ForegroundColor Cyan
+Write-Host "Resource Group: $resourceGroup" -ForegroundColor Green
 Write-Host "Function App: $functionAppName" -ForegroundColor Green
 Write-Host "AI Services Account: $aiServicesAcctName" -ForegroundColor Green
 Write-Host "Cosmos Account: $cosmosAccountName" -ForegroundColor Green
@@ -74,8 +80,8 @@ $aiServicesKey = az cognitiveservices account keys list --resource-group $resour
 Write-Host -ForegroundColor Green "Getting AI Search account account key"
 $aiSearchKey = az search admin-key show --resource-group $resourceGroup  --service-name $aiSearchName -o tsv --query primaryKey
 
-Write-Host -ForegroundColor Green "Getting Cosmos Connection String"
-$cosmosAccountEndpoint = az cosmosdb show --name --name $result.properties.outputs.cosmosAccountName.value --resource-group $resourceGroup -o tsv --query readLocations[0].documentEndpoint
+Write-Host -ForegroundColor Green "Getting Cosmos Endpoint"
+$cosmosAccountEndpoint = az cosmosdb show --name $result.properties.outputs.cosmosAccountName.value --resource-group $resourceGroup -o tsv --query documentEndpoint
 
 Write-Host -ForegroundColor Green "Getting Storage Connection  and SAS Urls"
 $storageKey = az storage account keys list -n $storageAcctName -g $resourceGroup --query [0].value -o tsv
@@ -168,12 +174,14 @@ $functionSettings = @{
 
  if(!$?){ exit }
 
-#  Push-Location .\CallCenterFunction
-#  Write-Host -ForegroundColor Green "Deploying function app..."
-#  func azure functionapp publish $functionAppName 
-#  Pop-Location
+ Push-Location .\CallCenterFunction
+ Write-Host -ForegroundColor Green "Deploying function app..."
+ func azure functionapp publish $functionAppName 
+ Pop-Location
 
 if(!$?){ exit }
+
+Write-Host -ForegroundColor Green "Assigning CosmosDB roles to user $userName"
 
 $cid = az cosmosdb show --resource-group $resourceGroup --name $cosmosAccountName -o tsv --query id
 Write-Output "CosmosDB Resource ID $cid"
@@ -192,9 +200,10 @@ foreach($id in $ids){
 if(!$?){ exit }
 
 Write-Host -ForegroundColor Green "Building console app..."
-dotnet build --no-incremental .\SpeechAnalytics\SpeechAnalytics.csproj -o .\SpeechAnalytics\bin\demo
-
-.\SpeechAnalytics\bin\demo\SpeechAnalytics.exe
+Push-Location .\SpeechAnalytics
+dotnet build  -o bin/demo -- -warnAsMessage:*
+.\bin\demo\sa.exe
+Pop-Location
 
 
 
