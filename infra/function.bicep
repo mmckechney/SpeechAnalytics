@@ -49,6 +49,7 @@ resource functionAppConfig 'Microsoft.Web/sites/config@2022-09-01' = {
     cors: {
       allowedOrigins: [
         'https://portal.azure.com'
+        'https://ms.portal.azure.com'
       ]
       supportCredentials: true
     }
@@ -65,7 +66,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
   properties: {
     serverFarmId: appServicePlan.id
     siteConfig: {
-      netFrameworkVersion: 'v8.0'
+      netFrameworkVersion: 'v9.0'
       appSettings: [
         {
           name: 'AzureWebJobsStorage'

@@ -19,7 +19,17 @@ namespace SpeechAnalyticsLibrary
       {
          this.log = log;
          this.settings = settings.CosmosDB;
-         client = new CosmosClient(settings.CosmosDB.AccountEndpoint, new DefaultAzureCredential());
+
+         DefaultAzureCredential cred;
+         if (!string.IsNullOrWhiteSpace(settings.CosmosDB.TenantId))
+         {
+            cred = new DefaultAzureCredential(new DefaultAzureCredentialOptions() { TenantId = settings.CosmosDB.TenantId });
+         }
+         else
+         {
+            cred = new DefaultAzureCredential();
+         }
+            client = new CosmosClient(settings.CosmosDB.AccountEndpoint, cred);
          this.skMemory = skMemory;
       }
       public async Task<bool> SaveAnalysis(InsightResults insights)
@@ -78,6 +88,7 @@ namespace SpeechAnalyticsLibrary
 
       public async Task<string> GetQueryResults(string cosmosQuery)
       {
+         cosmosQuery = cosmosQuery.CleanMd();
          log.LogDebug($"Cosmos Query: {cosmosQuery}");
          StringBuilder sb = new();
          try
@@ -90,7 +101,8 @@ namespace SpeechAnalyticsLibrary
             while (streamIterator.HasMoreResults)
             {
                var response = await streamIterator.ReadNextAsync();
-               sb.AppendLine(new StreamReader(response.Content).ReadToEnd());
+
+               sb.AppendLine(new StreamReader(response?.Content).ReadToEnd());
             }
             if (sb.Length == 0)
             {

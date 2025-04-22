@@ -46,6 +46,8 @@
       public string AccountEndpoint { get; set; }
       public string ContainerName { get; set; }
       public string DatabaseName { get; set; }
+
+      public string TenantId { get; set; }
    }
 
 

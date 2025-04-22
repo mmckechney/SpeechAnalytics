@@ -81,6 +81,9 @@ build/
 *.log
 *.scc
 
+script.md
+callcenterfunction.zip  
+
 # Visual C++ cache files
 ipch/
 *.aps

@@ -110,11 +110,8 @@
             var iterator = containerClient.GetBlobsAsync().GetAsyncEnumerator();
             while (await iterator.MoveNextAsync())
             {
-               if (iterator.Current.Name.StartsWith("recording"))
-               {
-                  files.Add(counter, iterator.Current.Name);
-                  counter++;
-               }
+               files.Add(counter, iterator.Current.Name);
+               counter++;
             }
             return files;
          }

@@ -37,7 +37,7 @@ $cosmosAccountName = "${safeFuncAppName}-cosmos"
 $storageAcctName = "${safeFuncAppName}storage"
 $aiSearchName = "${safeFuncAppName}-search"
 $keyVaultName = "${safeFuncAppName}-kv"
-
+$tenantId = az account show --query tenantId -o tsv
 
 Write-Host "Local user for Role Based Access:" -ForegroundColor Cyan
 Write-Host "User Name: $userName" -ForegroundColor Green
@@ -126,6 +126,7 @@ $transcriptSas = "https://$storageAcctName.blob.core.windows.net/$($transcriptCo
         "AccountEndpoint" = $cosmosAccountEndpoint
         "ContainerName" = $result.properties.outputs.cosmosContainerName.value
         "DatabaseName" = $result.properties.outputs.cosmosDataBaseName.value
+        "TenantId" = $tenantId
     }
 
 }
@@ -176,7 +177,16 @@ $functionSettings = @{
 
  Push-Location .\CallCenterFunction
  Write-Host -ForegroundColor Green "Deploying function app..."
- func azure functionapp publish $functionAppName 
+ dotnet publish .
+
+ $scriptDir = Split-Path $script:MyInvocation.MyCommand.Path
+ $zipFileName = "$($scriptDir)\callcenterfunction.zip"
+ $source= "$($scriptDir)\CallCenterFunction\bin\publish"
+
+ if(Test-Path $zipFileName) { Remove-Item $zipFileName }
+ [io.compression.zipfile]::CreateFromDirectory($source,$zipFileName)
+ az webapp deploy --name $functionAppName --resource-group $resourceGroup --src-path $zipFileName --type zip
+
  Pop-Location
 
 if(!$?){ exit }
@@ -201,7 +211,7 @@ if(!$?){ exit }
 
 Write-Host -ForegroundColor Green "Building console app..."
 Push-Location .\SpeechAnalytics
-dotnet build  -o bin/demo -- -warnAsMessage:*
+dotnet build  -o bin/demo --configuration Debug --no-restore --no-incremental --no-restore --verbosity normal
 .\bin\demo\sa.exe
 Pop-Location
 
