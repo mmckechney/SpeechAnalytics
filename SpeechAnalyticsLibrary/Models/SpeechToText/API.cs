@@ -3796,7 +3796,7 @@ namespace SpeechAnalyticsLibrary.Models.SpeechToText.API
       /// </summary>
 
       [System.Text.Json.Serialization.JsonPropertyName("diarizationEnabled")]
-      public bool? DiarizationEnabled { get; set; }
+      public bool? DiarizationEnabled { get; set; } = true;
 
       /// <summary>
       /// A value indicating whether word level timestamps are requested. The default value is
@@ -3804,14 +3804,14 @@ namespace SpeechAnalyticsLibrary.Models.SpeechToText.API
       /// </summary>
 
       [System.Text.Json.Serialization.JsonPropertyName("wordLevelTimestampsEnabled")]
-      public bool? WordLevelTimestampsEnabled { get; set; }
+      public bool? WordLevelTimestampsEnabled { get; set; } = true;
 
       /// <summary>
       /// A value indicating whether word level timestamps for the display form are requested. The default value is `false`.
       /// </summary>
 
       [System.Text.Json.Serialization.JsonPropertyName("displayFormWordLevelTimestampsEnabled")]
-      public bool? DisplayFormWordLevelTimestampsEnabled { get; set; }
+      public bool? DisplayFormWordLevelTimestampsEnabled { get; set; } = true;
 
       /// <summary>
       /// The duration of the transcription. The duration is encoded as ISO 8601 duration
