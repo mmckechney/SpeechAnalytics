@@ -5,7 +5,8 @@
       <OutputType>Exe</OutputType>
       <ImplicitUsings>enable</ImplicitUsings>
       <Nullable>enable</Nullable>
-   </PropertyGroup>
+     <UserSecretsId>1588efd9-aa4f-49d5-84ed-1781c0412870</UserSecretsId>
+  </PropertyGroup>
    <ItemGroup>
       <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.51.0" />
       <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues" Version="5.5.3" />

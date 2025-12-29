@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "${AZURE_LOCATION}"
+    },
+    "resourceGroupName": {
+      "value": "${AZURE_RESOURCE_GROUP}"
+    },
+    "storageAccountName": {
+      "value": "${AZURE_STORAGE_ACCOUNT}"
+    },
+    "aiServicesAccountName": {
+      "value": "${AZURE_AISERVICES_ACCOUNT_NAME}"
+    },
+    "functionAppName": {
+      "value": "${AZURE_FUNCTION_APP_NAME}"
+    },
+    "userIdGuid": {
+      "value": "${AZURE_CURRENT_USER_OBJECT_ID}"
+    },
+    "aiFoundryName": {
+      "value": "${AZURE_AIFOUNDRY}"
+    },
+    "aiSearchName": {
+      "value": "${AZURE_AISEARCH_NAME}"
+    },
+    "cosmosAccountName": {
+      "value": "${AZURE_COSMOS_ACCOUNT_NAME}"
+    }
+  }
+}

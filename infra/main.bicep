@@ -7,7 +7,6 @@ param resourceGroupName string
 param storageAccountName string
 param aiServicesAccountName string
 param functionAppName string
-param azureOpenAiEndpoint string
 param cosmosAccountName string
 param aiSearchName string
 param userIdGuid string
@@ -41,10 +40,20 @@ module aiServices 'aiservices.bicep' = {
 	}
     dependsOn: [
         rg
-        keyvault
     ]
 }
 
+module aiFoundry 'aifoundryresource.bicep' = {
+    scope: resourceGroup(resourceGroupName)
+    name: 'aifoundry'
+    params: {
+        location: location
+        aiFoundryName: aiServicesAccountName
+    }
+    dependsOn: [
+        rg
+    ]
+}
 module aiSearch 'aisearch.bicep' = {
     scope: resourceGroup(resourceGroupName)
     name: 'aisearch'
@@ -55,7 +64,6 @@ module aiSearch 'aisearch.bicep' = {
     }
     dependsOn: [
         rg
-        keyvault
     ]
 }
 module roleassignment 'roleassignment.bicep' = {
@@ -104,7 +112,7 @@ module function 'function.bicep' = {
         transcriptionContainerUri: storage.outputs.transcriptionContainerUri
         cosmosAccountEndpoint: cosmosDB.outputs.cosmosAccountEndpoint
         aiSearchEndpoint: aiSearch.outputs.aiSearchEndpoint
-        openAiEndpoint: azureOpenAiEndpoint
+        openAiEndpoint: aiFoundry.outputs.aiFoundryProjectEndpoint
 
     }
     dependsOn: [

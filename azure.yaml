@@ -1,0 +1,32 @@
+name: speechanalytics
+metadata:
+  template: speechanalytics
+
+services:
+  callcenterfunction:
+    project: ./CallCenterFunction
+    language: dotnet
+    host: function
+    hooks:
+      prepackage:
+        windows:
+          shell: pwsh
+          workingDirectory: ./CallCenterFunction
+          run: dotnet publish CallCenterFunction.csproj --configuration Release --output ./bin/Release/net9.0/publish
+        linux:
+          shell: pwsh
+          workingDirectory: ./CallCenterFunction
+          run: dotnet publish CallCenterFunction.csproj --configuration Release --output ./bin/Release/net9.0/publish
+    deployment:
+      package:
+        path: ./CallCenterFunction/bin/Release/net9.0/publish
+
+infra:
+  provider: bicep
+  path: ./infra/     
+  module: main 
+
+hooks:
+  preup: 
+    - shell: pwsh
+      run: ./scripts/preup.ps1
