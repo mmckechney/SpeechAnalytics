@@ -1,7 +1,8 @@
 param storageAccountName string
 param blobContainerName string
 param aiServicesPrincipal string
-param functionAppPrincipal string
+param askPrincipal string
+param transcriptionPrincipal string
 
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2021-04-01' existing = {
@@ -21,7 +22,6 @@ resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/container
 }
 
 var storageBlobDataContrib = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
-var secretsUser = '4633458b-17de-408a-b874-0445c86b69e6'
 
 resource ai_blob_contrib_role 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(aiServicesPrincipal, storageBlobDataContrib, resourceGroup().id)
@@ -32,20 +32,20 @@ resource ai_blob_contrib_role 'Microsoft.Authorization/roleAssignments@2022-04-0
   }
 }
 
-resource func_blob_contrib_role 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(functionAppPrincipal, storageBlobDataContrib, resourceGroup().id)
+resource ask_blob_contrib_role 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(askPrincipal, storageBlobDataContrib, resourceGroup().id)
   scope: blobService
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContrib)
-    principalId: functionAppPrincipal
+    principalId: askPrincipal
   }
 }
 
-resource func_secrets_user_role 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(functionAppPrincipal, secretsUser, resourceGroup().id)
-  scope: resourceGroup()
+resource transcription_blob_contrib_role 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(transcriptionPrincipal, storageBlobDataContrib, resourceGroup().id)
+  scope: blobService
   properties: {
-    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', secretsUser)
-    principalId: functionAppPrincipal
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContrib)
+    principalId: transcriptionPrincipal
   }
 }

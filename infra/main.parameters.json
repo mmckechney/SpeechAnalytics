@@ -3,31 +3,43 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "location": {
-      "value": "${AZURE_LOCATION}"
+      "value": "{{AZURE_LOCATION}}"
     },
     "resourceGroupName": {
-      "value": "${AZURE_RESOURCE_GROUP}"
+      "value": "{{AZURE_RESOURCE_GROUP}}"
     },
     "storageAccountName": {
-      "value": "${AZURE_STORAGE_ACCOUNT}"
+      "value": "{{APP_BASE_NAME}}storage"
     },
     "aiServicesAccountName": {
-      "value": "${AZURE_AISERVICES_ACCOUNT_NAME}"
+      "value": "{{APP_BASE_NAME}}-aiservices"
     },
     "functionAppName": {
-      "value": "${AZURE_FUNCTION_APP_NAME}"
-    },
-    "userIdGuid": {
-      "value": "${AZURE_CURRENT_USER_OBJECT_ID}"
-    },
-    "aiFoundryName": {
-      "value": "${AZURE_AIFOUNDRY}"
-    },
-    "aiSearchName": {
-      "value": "${AZURE_AISEARCH_NAME}"
+      "value": "{{APP_BASE_NAME}}"
     },
     "cosmosAccountName": {
-      "value": "${AZURE_COSMOS_ACCOUNT_NAME}"
+      "value": "{{APP_BASE_NAME}}-cosmos"
+    },
+    "aiSearchName": {
+      "value": "{{APP_BASE_NAME}}-search"
+    },
+    "userIdGuid": {
+      "value": "{{AZURE_PRINCIPAL_ID}}"
+    },
+    "askContainerImage": {
+      "value": "{{AZD_SERVICE_ASKINSIGHTS_IMAGE}}"
+    },
+    "transcriptionContainerImage": {
+      "value": "{{AZD_SERVICE_TRANSCRIPTION_IMAGE}}"
+    },
+    "containerRegistryServer": {
+      "value": "{{AZURE_CONTAINER_REGISTRY_ENDPOINT}}"
+    },
+    "containerRegistryUsername": {
+      "value": "{{AZURE_CONTAINER_REGISTRY_USERNAME}}"
+    },
+    "containerRegistryPassword": {
+      "value": "{{AZURE_CONTAINER_REGISTRY_PASSWORD}}"
     }
   }
 }

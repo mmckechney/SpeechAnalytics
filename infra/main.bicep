@@ -10,6 +10,17 @@ param functionAppName string
 param cosmosAccountName string
 param aiSearchName string
 param userIdGuid string
+param openAIChatModel string = 'gpt-4-32k'
+param openAIChatDeploymentName string = 'gpt-4-32k'
+param openAIEmbeddingModel string = 'text-embedding-ada-002'
+param openAIEmbeddingDeploymentName string = 'text-embedding-ada-002'
+param aiServicesApiVersion string = 'v3.2-preview.1'
+param askContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+param transcriptionContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+param containerRegistryServer string = ''
+param containerRegistryUsername string = ''
+@secure()
+param containerRegistryPassword string = ''
 
 
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
@@ -66,6 +77,11 @@ module aiSearch 'aisearch.bicep' = {
         rg
     ]
 }
+
+var containerEnvironmentName = '${functionAppName}-env'
+var logAnalyticsWorkspaceName = '${functionAppName}-log'
+var askContainerAppName = '${functionAppName}-ask'
+var transcriptionContainerAppName = '${functionAppName}-transcription'
 module roleassignment 'roleassignment.bicep' = {
 	scope: resourceGroup(resourceGroupName)
 	name: 'roleassignment'
@@ -73,7 +89,8 @@ module roleassignment 'roleassignment.bicep' = {
         storageAccountName: storageAccountName
         aiServicesPrincipal: aiServices.outputs.aiServicesIdentityPrincipal
         blobContainerName: storage.outputs.audiofile_container
-        functionAppPrincipal: function.outputs.functionPrincipalId
+        askPrincipal: containerApps.outputs.askPrincipalId
+        transcriptionPrincipal: containerApps.outputs.transcriptionPrincipalId
 	}
     dependsOn: [
         rg
@@ -94,29 +111,41 @@ module cosmosDB 'cosmos.bicep' = {
     ]
 }
 
-module function 'function.bicep' = {
+module containerApps 'containerapps.bicep' = {
     scope: resourceGroup(resourceGroupName)
-    name: 'function'
+    name: 'containerapps'
     params: {
         location: location
-        aiServicesAccountName: aiServicesAccountName
-        cosmosDbContainerName: cosmosDB.outputs.cosmosContainerName
-        cosmosDbName: cosmosDB.outputs.cosmosDataBaseName
-        functionAppName: functionAppName
-        storageAccountName: storageAccountName
-        storageBlobServiceUri: storage.outputs.blobServiceUri
-        storageQueueServiceUri: storage.outputs.queueServiceUri
-        storageTableServiceUri: storage.outputs.tableServiceUri
-        storageFileServiceUri: storage.outputs.fileServiceUri
-        audioContainerUri: storage.outputs.audioContainerUri
-        transcriptionContainerUri: storage.outputs.transcriptionContainerUri
-        cosmosAccountEndpoint: cosmosDB.outputs.cosmosAccountEndpoint
+        environmentName: containerEnvironmentName
+        logAnalyticsName: logAnalyticsWorkspaceName
+        askAppName: askContainerAppName
+        transcriptionAppName: transcriptionContainerAppName
+        containerRegistryServer: containerRegistryServer
+        containerRegistryUsername: containerRegistryUsername
+        containerRegistryPassword: containerRegistryPassword
+        askImage: askContainerImage
+        transcriptionImage: transcriptionContainerImage
+        aiServicesEndpoint: aiServices.outputs.endpoint
+        aiServicesRegion: aiServices.outputs.location
+        aiServicesApiVersion: aiServicesApiVersion
         aiSearchEndpoint: aiSearch.outputs.aiSearchEndpoint
+        storageSourceContainerUrl: storage.outputs.audioContainerUri
+        storageTargetContainerUrl: storage.outputs.transcriptionContainerUri
+        cosmosAccountEndpoint: cosmosDB.outputs.cosmosAccountEndpoint
+        cosmosDatabaseName: cosmosDB.outputs.cosmosDataBaseName
+        cosmosContainerName: cosmosDB.outputs.cosmosContainerName
         openAiEndpoint: aiFoundry.outputs.aiFoundryProjectEndpoint
-
+        openAiChatModel: openAIChatModel
+        openAiChatDeploymentName: openAIChatDeploymentName
+        openAiEmbeddingModel: openAIEmbeddingModel
+        openAiEmbeddingDeploymentName: openAIEmbeddingDeploymentName
     }
     dependsOn: [
-        rg
+        storage
+        aiServices
+        aiSearch
+        cosmosDB
+        aiFoundry
     ]
 }
 
@@ -127,12 +156,13 @@ module permissions 'permissions.bicep' = {
         aiServicesAccountName: aiServicesAccountName
         aiSearchName: aiSearchName
         cosmosAccountName: cosmosDB.outputs.cosmosAccountName
-        functionPrincipalId: function.outputs.functionPrincipalId
+        askPrincipalId: containerApps.outputs.askPrincipalId
+        transcriptionPrincipalId: containerApps.outputs.transcriptionPrincipalId
         userPrincipalId: userIdGuid
     }
     dependsOn: [
         aiServices
-        function
+        containerApps
     ]
 }
 
@@ -164,27 +194,6 @@ output storageFileServiceUri string = storage.outputs.fileServiceUri
 output audioContainerUri string = storage.outputs.audioContainerUri
 output transcriptionContainerUri string = storage.outputs.transcriptionContainerUri
 output aiSearchEndpoint string = aiSearch.outputs.aiSearchEndpoint
-output functionPrincipalId string = function.outputs.functionPrincipalId
-
-resource audioBlobEventSubscription 'Microsoft.EventGrid/eventSubscriptions@2022-06-15' = {
-    name: '${functionAppName}-audio-eg'
-    properties: {
-        destination: {
-            endpointType: 'AzureFunction'
-            properties: {
-                resourceId: function.outputs.functionAppResourceId
-                //functionName: 'Transcription'
-                maxEventsPerBatch: 1
-                preferredBatchSizeInKilobytes: 64
-            }
-        }
-        filter: {
-            subjectBeginsWith: '/blobServices/default/containers/${storage.outputs.audioContainerName}/'
-            includedEventTypes: [
-                'Microsoft.Storage.BlobCreated'
-            ]
-        }
-        eventDeliverySchema: 'EventGridSchema'
-    }
-}
+output askContainerFqdn string = containerApps.outputs.askFqdn
+output transcriptionContainerFqdn string = containerApps.outputs.transcriptionFqdn
 

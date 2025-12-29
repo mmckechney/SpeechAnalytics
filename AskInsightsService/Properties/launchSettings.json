@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "AskInsightsService": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:51984;http://localhost:51985"
+    }
+  }
+}
