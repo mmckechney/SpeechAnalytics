@@ -17,7 +17,6 @@ namespace SpeechAnalytics
 
       private static AnalyticsSettings settings;
       private static ILoggerFactory logFactory;
-      private static SemanticMemory semanticMemory;
       private static FileHandling fileHandler;
       private static BatchTranscription batch;
       private static IdentityHelper identityHelper;
@@ -58,13 +57,11 @@ namespace SpeechAnalytics
          });
          log = logFactory.CreateLogger("Program");
 
-         //Not used yet...
-         semanticMemory = new SemanticMemory(logFactory, settings);
          identityHelper = new IdentityHelper(logFactory.CreateLogger<IdentityHelper>());
          fileHandler = new FileHandling(logFactory.CreateLogger<FileHandling>(), identityHelper);
-         cosmosHelper = new CosmosHelper(logFactory.CreateLogger<CosmosHelper>(), settings, semanticMemory);
+         cosmosHelper = new CosmosHelper(logFactory.CreateLogger<CosmosHelper>(), settings);
          functionFilter = new FunctionInvocationFilter(new LoggerFactory().CreateLogger<FunctionInvocationFilter>());
-         skAi = new SkAi(logFactory.CreateLogger<SkAi>(), config, logFactory, settings, semanticMemory, cosmosHelper, loglevel, functionFilter);
+         skAi = new SkAi(logFactory.CreateLogger<SkAi>(), config, logFactory, settings, cosmosHelper, loglevel, functionFilter);
          batch = new BatchTranscription(logFactory.CreateLogger<BatchTranscription>(), fileHandler, skAi, settings);
          speechD = new SpeechDiarization(logFactory.CreateLogger<SpeechDiarization>(), settings);
 

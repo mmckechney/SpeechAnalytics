@@ -14,8 +14,7 @@ namespace SpeechAnalyticsLibrary
       private ILogger<CosmosHelper> log;
       private CosmosClient client;
       CosmosDB settings;
-      SemanticMemory skMemory;
-      public CosmosHelper(ILogger<CosmosHelper> log, AnalyticsSettings settings, SemanticMemory skMemory)
+      public CosmosHelper(ILogger<CosmosHelper> log, AnalyticsSettings settings)
       {
          this.log = log;
          this.settings = settings.CosmosDB;
@@ -30,7 +29,6 @@ namespace SpeechAnalyticsLibrary
             cred = new DefaultAzureCredential();
          }
             client = new CosmosClient(settings.CosmosDB.AccountEndpoint, cred);
-         this.skMemory = skMemory;
       }
       public async Task<bool> SaveAnalysis(InsightResults insights)
       {
@@ -41,8 +39,6 @@ namespace SpeechAnalyticsLibrary
             if (response.StatusCode == System.Net.HttpStatusCode.OK || response.StatusCode == System.Net.HttpStatusCode.Created)
             {
                log.LogDebug($"Saved analysis of {insights.CallId} to CosmosDB");
-               var json = JsonSerializer.Serialize<InsightResults>(insights, new JsonSerializerOptions() { WriteIndented = true });
-               await skMemory.StoreMemoryAsync(insights.id, json);
                return true;
             }
             else

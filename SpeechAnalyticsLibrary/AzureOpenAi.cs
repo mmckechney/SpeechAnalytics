@@ -30,20 +30,18 @@ namespace SpeechAnalyticsLibrary
       Dictionary<string, KernelFunction> yamlPrompts = new();
       AzureOpenAi settings;
       HttpClient _client;
-      private SemanticMemory skMemory;
       private CosmosHelper cosmosHelper;
       private IFunctionInvocationFilter functionInvokeFilter;
 
-      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, SemanticMemory skMemory, CosmosHelper cosmosHelper, IFunctionInvocationFilter functionInvokeFilter) : this(log, config, loggerFactory, aiSettings, skMemory, cosmosHelper, LogLevel.Information, functionInvokeFilter)
+      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, CosmosHelper cosmosHelper, IFunctionInvocationFilter functionInvokeFilter) : this(log, config, loggerFactory, aiSettings,cosmosHelper, LogLevel.Information, functionInvokeFilter)
       {
 
       }
-      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings, SemanticMemory skMemory, CosmosHelper cosmosHelper, LogLevel logLevel, IFunctionInvocationFilter functionInvokeFilter)
+      public SkAi(ILogger<SkAi> log, IConfiguration config, ILoggerFactory loggerFactory, AnalyticsSettings aiSettings,  CosmosHelper cosmosHelper, LogLevel logLevel, IFunctionInvocationFilter functionInvokeFilter)
       {
          settings = aiSettings.AzureOpenAi;
          _config = config;
          this.log = log;
-         this.skMemory = skMemory;
          this.cosmosHelper = cosmosHelper;
          this.functionInvokeFilter = functionInvokeFilter;
          this.loggerFactory = LoggerFactory.Create(builder =>

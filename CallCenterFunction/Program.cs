@@ -55,7 +55,6 @@ namespace DocumentQuestionsFunction
       {
          services.AddApplicationInsightsTelemetryWorkerService();
          services.ConfigureFunctionsApplicationInsights();
-         services.AddSingleton<SemanticMemory>();
          services.AddSingleton<BatchTranscription>();
          services.AddSingleton<IdentityHelper>();
          services.AddSingleton<IFunctionInvocationFilter, FunctionInvocationFilter>();
