@@ -80,16 +80,16 @@ namespace SpeechAnalytics
          Console.ForegroundColor = ConsoleColor.White;
 
          Dictionary<int, string> files;
-
          int startIndex = 3;
-        
-
          int pad = 3;
          while (true)
          {
+            // Generate a correlation ID for this operation
+            var correlationId = Guid.NewGuid().ToString();
             try
             {
                files = await fileHandler.GetTranscriptionList(settings.Storage.TargetContainerUrl, startIndex);
+               log.LogInformation($"[CorrelationId: {correlationId}] Loaded transcription list.");
                log.LogInformation("");
                log.LogInformation("Please make a selection:", ConsoleColor.Green);
                log.LogInformation($"{"1.".PadRight(pad)} Transcribe a new audio file");
@@ -103,9 +103,22 @@ namespace SpeechAnalytics
                }
                log.LogInformation("");
                log.LogInformation($"Or just start typing to ask a question (be sure to include the filename of the transcription!).", ConsoleColor.Green);
+               log.LogInformation("Type 'exit' or 'quit' to end the application.", ConsoleColor.Yellow);
 
                Console.WriteLine();
                var selection = Console.ReadLine();
+
+               if (string.IsNullOrWhiteSpace(selection))
+               {
+                  log.LogWarning($"[CorrelationId: {correlationId}] No input provided. Please enter a valid selection.", ConsoleColor.Magenta);
+                  continue;
+               }
+               if (selection.Trim().Equals("exit", StringComparison.OrdinalIgnoreCase) || selection.Trim().Equals("quit", StringComparison.OrdinalIgnoreCase))
+               {
+                  log.LogInformation($"[CorrelationId: {correlationId}] Application exiting by user request.", ConsoleColor.Cyan);
+                  Console.WriteLine("Goodbye!");
+                  break;
+               }
 
                List<(string source, string transcription)> transcriptions = new();
                if (!int.TryParse(selection, out int index) || (files.Keys.Count > 0 && index > files.Keys.Max()) || index < 1)
@@ -113,9 +126,16 @@ namespace SpeechAnalytics
                   log.LogInformation("");
                   log.LogInformation("Getting your response...", ConsoleColor.Cyan);
                   log.LogInformation("Answer:", ConsoleColor.Cyan);
-                  await foreach (var bit in skAi.AskQuestionsStreaming(selection))
+                  try
                   {
-                     Console.Write(bit);
+                     await foreach (var bit in skAi.AskQuestionsStreaming(selection))
+                     {
+                        Console.Write(bit);
+                     }
+                  }
+                  catch (Exception ex)
+                  {
+                     log.LogError($"[CorrelationId: {correlationId}] Error during streaming answer: {ex.Message}", new Dictionary<string, object> { { "Selection", selection } });
                   }
                   log.LogInformation("");
                   log.LogInformation("");
@@ -125,33 +145,41 @@ namespace SpeechAnalytics
                }
 
                string fileName;
-               if (index == 1)
+               try
                {
-                  transcriptions = await SingleFileTranscription(files);
-                  if (transcriptions == null || transcriptions.Count == 0)
+                  if (index == 1)
                   {
-                     continue;
+                     transcriptions = await SingleFileTranscription(files);
+                     if (transcriptions == null || transcriptions.Count == 0)
+                     {
+                        log.LogWarning($"[CorrelationId: {correlationId}] No transcriptions returned for single file.", ConsoleColor.Magenta);
+                        continue;
+                     }
                   }
-
-               }
-               else if (index == 2)
-               {
-                  transcriptions = await NewTranscriptions(null);
-                  if (transcriptions == null || transcriptions.Count == 0)
+                  else if (index == 2)
                   {
-                     continue;
+                     transcriptions = await NewTranscriptions(null);
+                     if (transcriptions == null || transcriptions.Count == 0)
+                     {
+                        log.LogWarning($"[CorrelationId: {correlationId}] No transcriptions returned for all files.", ConsoleColor.Magenta);
+                        continue;
+                     }
                   }
-
+                  else
+                  {
+                     fileName = files[index];
+                     transcriptions.Add(await fileHandler.GetTranscriptionFileTextFromBlob(fileName, settings.Storage.TargetContainerUrl));
+                  }
                }
-               else
+               catch (Exception ex)
                {
-                  fileName = files[index];
-                  transcriptions.Add(await fileHandler.GetTranscriptionFileTextFromBlob(fileName, settings.Storage.TargetContainerUrl));
+                  log.LogError($"[CorrelationId: {correlationId}] Error during transcription selection: {ex.Message}", new Dictionary<string, object> { { "Selection", selection }, { "Index", index } });
+                  continue;
                }
 
                if (transcriptions.Count == 0 || transcriptions[0].transcription.Length == 0)
                {
-                  log.LogWarning("No transcription text found. Please make another selection", ConsoleColor.Magenta);
+                  log.LogWarning($"[CorrelationId: {correlationId}] No transcription text found. Please make another selection", ConsoleColor.Magenta);
                   continue;
                }
 
@@ -160,103 +188,134 @@ namespace SpeechAnalytics
                InsightResults insightObj = null;
                foreach (var transcription in transcriptions)
                {
-
-                  var existingInsightObj = await cosmosHelper.GetAnalysis(transcription.source);
-                   if (existingInsightObj != null && reask == true)
+                  try
                   {
-                     insightObj = existingInsightObj;
-                     if (transcriptions.Count == 1)
+                     var existingInsightObj = await cosmosHelper.GetAnalysis(transcription.source);
+                     if (existingInsightObj != null && reask == true)
                      {
-                        log.LogInformation("Analysis of this transcript has already been performed. Do you want to analyze it again (y/n)?", ConsoleColor.Yellow);
+                        insightObj = existingInsightObj;
+                        if (transcriptions.Count == 1)
+                        {
+                           log.LogInformation("Analysis of this transcript has already been performed. Do you want to analyze it again (y/n)?", ConsoleColor.Yellow);
+                        }
+                        else
+                        {
+                           log.LogInformation("Analysis of this transcript has already been performed. Do you want to analyze it again (y/n) or (Y/N) - yes for all/no for all)?", ConsoleColor.Yellow);
+                        }
+                        var input = Console.ReadLine();
+                        if (input.StartsWith("Y"))
+                        {
+                           rerun = true;
+                           reask = false;
+                        }
+                        else if (input.StartsWith("N"))
+                        {
+                           rerun = false;
+                           reask = false;
+                        }
+                        else if (input.StartsWith("y"))
+                        {
+                           rerun = true;
+                        }
+                        else
+                        {
+                           rerun = false;
+                        }
                      }
-                     else
-                     {
-                        log.LogInformation("Analysis of this transcript has already been performed. Do you want to analyze it again (y/n) or (Y/N) - yes for all/no for all)?", ConsoleColor.Yellow);
-                     }
-                     var input = Console.ReadLine();
-                     if (input.StartsWith("Y"))
-                     {
-                        rerun = true;
-                        reask = false;
-                     }
-                     else if (input.StartsWith("N"))
-                     {
-                        rerun = false;
-                        reask = false;
-                     }
-                     else if (input.StartsWith("y"))
-                     {
-                        rerun = true;
-                     }
-                     else
-                     {
-                        rerun = false;
-                     }
-                  }
 
-                  if (rerun)
+                     if (rerun)
+                     {
+                        log.LogInformation("");
+                        log.LogInformation("");
+                        log.LogInformation($"Analyzing transcript {transcription.source} for sentiment...");
+                        log.LogInformation("");
+                        string insights = string.Empty;
+                        try
+                        {
+                           insights = await skAi.GetTranscriptionInsights(transcription.transcription, transcription.source);
+                        }
+                        catch (Exception ex)
+                        {
+                           log.LogError($"[CorrelationId: {correlationId}] Error getting insights from Azure OpenAI: {ex.Message}", new Dictionary<string, object> { { "Source", transcription.source } });
+                           Console.WriteLine("An error occurred while analyzing the transcript. Please try again later.");
+                           continue;
+                        }
+                        if (string.IsNullOrWhiteSpace(insights))
+                        {
+                           log.LogError($"[CorrelationId: {correlationId}] Failed to get insights from Azure OpenAI", new Dictionary<string, object> { { "Source", transcription.source } });
+                           Console.WriteLine("No insights were returned for this transcript.");
+                           continue;
+                        }
+                        try
+                        {
+                           log.LogDebug($"{insights.ExtractJson()}", ConsoleColor.DarkCyan);
+                           insightObj = JsonSerializer.Deserialize<InsightResults>(insights.ExtractJson());
+                           insightObj.TranscriptText = transcription.transcription;
+                           if (existingInsightObj != null)
+                           {
+                              insightObj.id = existingInsightObj.id;
+                           }
+                           log.LogDebug(JsonSerializer.Serialize<InsightResults>(insightObj, new JsonSerializerOptions() { WriteIndented = true }));
+                        }
+                        catch (Exception ex)
+                        {
+                           log.LogError($"[CorrelationId: {correlationId}] Error deserializing insight results: {ex.Message}", new Dictionary<string, object> { { "Source", transcription.source } });
+                           Console.WriteLine("An error occurred while processing the analysis results. Please try again later.");
+                           continue;
+                        }
+                        bool saved = false;
+                        try
+                        {
+                           saved = await cosmosHelper.SaveAnalysis(insightObj);
+                        }
+                        catch (Exception ex)
+                        {
+                           log.LogError($"[CorrelationId: {correlationId}] Error saving analysis to CosmosDB: {ex.Message}", new Dictionary<string, object> { { "CallId", insightObj?.CallId } });
+                           Console.WriteLine("An error occurred while saving the analysis results. Please try again later.");
+                        }
+                        if (saved)
+                        {
+                           log.LogInformation($"[CorrelationId: {correlationId}] Saved analysis to CosmosDB", ConsoleColor.Green);
+                        }
+                        else
+                        {
+                           log.LogWarning($"[CorrelationId: {correlationId}] Failed to save analyis to CosmosDB", ConsoleColor.Red);
+                        }
+                     }
+
+                     log.LogInformation("");
+                     log.LogInformation("");
+                     log.LogInformation($"Analysis for: {insightObj.CallId}", ConsoleColor.DarkCyan);
+                     log.LogInformation("Sentiment:", ConsoleColor.Cyan);
+                     log.LogInformation($"  - " + insightObj.Sentiment);
+                     log.LogInformation("Sentiment Examples:", ConsoleColor.Cyan);
+                     log.LogInformation($"  - " + string.Join($"{Environment.NewLine}  - ", insightObj.SentimentExamples));
+                     log.LogInformation("Action Items:", ConsoleColor.Cyan);
+                     log.LogInformation($"  - " + string.Join($"{Environment.NewLine}  - ", insightObj.FollowUpActions));
+                     log.LogInformation("Problem Statement:", ConsoleColor.Cyan);
+                     log.LogInformation($"  - " + insightObj.ProblemStatement);
+                     log.LogInformation("Root Cause Type:", ConsoleColor.Cyan);
+                     log.LogInformation($"  - " + insightObj.RootCause);
+                     log.LogInformation("Problem Resolved?:", ConsoleColor.Cyan);
+                     log.LogInformation($"  - " + insightObj.Resolved);
+                     log.LogInformation("");
+                     log.LogInformation("Full Transcript:", ConsoleColor.Cyan);
+                     log.LogInformation(insightObj.TranscriptText);
+                  }
+                  catch (Exception ex)
                   {
-                     log.LogInformation("");
-                     log.LogInformation("");
-                     log.LogInformation($"Analyzing transcript {transcription.source} for sentiment...");
-                     log.LogInformation("");
-
-                     string insights = await skAi.GetTranscriptionInsights(transcription.transcription, transcription.source);
-                     if (string.IsNullOrWhiteSpace(insights))
-                     {
-                        log.LogError("Failed to get insights from Azure OpenAI");
-                        continue;
-                     }
-                     log.LogDebug($"{insights.ExtractJson()}", ConsoleColor.DarkCyan);
-                     insightObj = JsonSerializer.Deserialize<InsightResults>(insights.ExtractJson());
-                     insightObj.TranscriptText = transcription.transcription;
-                     if (existingInsightObj != null)
-                     {
-                        insightObj.id = existingInsightObj.id;
-                     }
-                     log.LogDebug(JsonSerializer.Serialize<InsightResults>(insightObj, new JsonSerializerOptions() { WriteIndented = true }));
-
-                     bool saved = await cosmosHelper.SaveAnalysis(insightObj);
-                     if (saved)
-                     {
-                        log.LogInformation("Saved analysis to CosmosDB", ConsoleColor.Green);
-                     }
-                     else
-                     {
-                        log.LogWarning("Failed to save analyis to CosmosDB", ConsoleColor.Red);
-                     }
+                     log.LogError($"[CorrelationId: {correlationId}] Error during analysis or logging: {ex.Message}", new Dictionary<string, object> { { "Source", transcription.source } });
+                     Console.WriteLine("An unexpected error occurred during analysis. Please try again.");
                   }
-
-                  log.LogInformation("");
-                  log.LogInformation("");
-                  log.LogInformation($"Analysis for: {insightObj.CallId}", ConsoleColor.DarkCyan);
-                  log.LogInformation("Sentiment:", ConsoleColor.Cyan);
-                  log.LogInformation($"  - " + insightObj.Sentiment);
-                  log.LogInformation("Sentiment Examples:", ConsoleColor.Cyan);
-                  log.LogInformation($"  - " + string.Join($"{Environment.NewLine}  - ", insightObj.SentimentExamples));
-                  log.LogInformation("Action Items:", ConsoleColor.Cyan);
-                  log.LogInformation($"  - " + string.Join($"{Environment.NewLine}  - ", insightObj.FollowUpActions));
-                  log.LogInformation("Problem Statement:", ConsoleColor.Cyan);
-                  log.LogInformation($"  - " + insightObj.ProblemStatement);
-                  log.LogInformation("Root Cause Type:", ConsoleColor.Cyan);
-                  log.LogInformation($"  - " + insightObj.RootCause);
-                  log.LogInformation("Problem Resolved?:", ConsoleColor.Cyan);
-                  log.LogInformation($"  - " + insightObj.Resolved);
-                  log.LogInformation("");
-                  log.LogInformation("Full Transcript:", ConsoleColor.Cyan);
-                  log.LogInformation(insightObj.TranscriptText);
-
                }
             }
             catch (Exception exe)
             {
-               log.LogError(exe.Message);
+               log.LogError($"[CorrelationId: {correlationId}] Unhandled error in main loop: {exe.Message}");
+               Console.WriteLine("A critical error occurred. Please restart the application.");
             }
-
-            
-            log.LogInformation("----------------------------------------------------------");
+            log.LogInformation($"[CorrelationId: {correlationId}] ----------------------------------------------------------");
          }
-
       }
 
       private static async Task<List<(string source, string transcription)>> SingleFileTranscription(Dictionary<int, string> existingFiles)

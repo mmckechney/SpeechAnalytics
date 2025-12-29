@@ -29,7 +29,7 @@
          }
          catch (Exception exe)
          {
-            log.LogError($"Error: {exe.Message}");
+            log.LogError($"Error in GetListOfAudioFilesInContainer for container '{sourceContainerUrl}': {exe.Message}");
             return new List<string>();
          }
       }
@@ -38,67 +38,53 @@
          try
          {
             BlobContainerClient containerClient = GetContainerClient(sourceContainerUrl);
-
-            //upload the file to blob storage using the sourceURL SAS token
             var blobClient = containerClient.GetBlobClient(file.Name);
             var result = await blobClient.UploadAsync(file.FullName, true);
-
-            //validate that the upload was successful
             if (result.GetRawResponse().Status == 201)
             {
-               log.LogInformation("File uploaded successfully");
-               // DeletePreExistingFile(file, targetSasUrl);
+               log.LogInformation($"File '{file.Name}' uploaded successfully to '{sourceContainerUrl}'");
                return blobClient.Uri.AbsoluteUri.ToString();
             }
             else
             {
-               log.LogError("File upload failed");
+               log.LogError($"File upload failed for '{file.Name}' to '{sourceContainerUrl}'");
                return string.Empty;
             }
-
-            //Delete any pre-translated document
-
          }
          catch (Exception exe)
          {
-            log.LogError($"Error: {exe.Message}");
+            log.LogError($"Error uploading '{file?.Name}' to '{sourceContainerUrl}': {exe.Message}");
             return string.Empty;
          }
       }
-
       public async Task<string> SaveTranscriptionFile(string sourceFileName, string transcriptionText, string targetContainerUrl)
       {
          try
          {
             BlobContainerClient containerClient = GetContainerClient(targetContainerUrl);
-
             var fileName = GetTranscriptionFileName(sourceFileName);
-            //upload the file to blob storage using the sourceURL SAS token
             var blobClient = containerClient.GetBlobClient(fileName);
             using (MemoryStream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(transcriptionText)))
             {
                var result = await blobClient.UploadAsync(stream, true);
-
                if (result.GetRawResponse().Status == 201)
                {
-                  log.LogInformation($"File {fileName} uploaded successfully");
-                  // DeletePreExistingFile(file, targetSasUrl);
+                  log.LogInformation($"File '{fileName}' uploaded successfully to '{targetContainerUrl}'");
                   return blobClient.Uri.AbsoluteUri.ToString();
                }
                else
                {
-                  log.LogError("File upload failed");
+                  log.LogError($"File upload failed for '{fileName}' to '{targetContainerUrl}'");
                   return string.Empty;
                }
             }
          }
          catch (Exception exe)
          {
-            log.LogError($"Error: {exe.Message}");
+            log.LogError($"Error saving transcription file '{sourceFileName}' to '{targetContainerUrl}': {exe.Message}");
             return string.Empty;
          }
       }
-
       public async Task<Dictionary<int, string>> GetTranscriptionList(string containerUrl, int startIndex)
       {
          try
@@ -106,7 +92,6 @@
             Dictionary<int, string> files = new();
             int counter = startIndex;
             var containerClient = GetContainerClient(containerUrl);
-
             var iterator = containerClient.GetBlobsAsync().GetAsyncEnumerator();
             while (await iterator.MoveNextAsync())
             {
@@ -117,11 +102,10 @@
          }
          catch (Exception exe)
          {
-            log.LogError($"Error: {exe.Message}");
+            log.LogError($"Error in GetTranscriptionList for container '{containerUrl}': {exe.Message}");
             return new Dictionary<int, string>();
          }
       }
-
       public async Task<(string source, string transcription)> GetTranscriptionFileTextFromBlob(string filename, string containerUrl)
       {
          try
@@ -137,31 +121,27 @@
          }
          catch (Exception exe)
          {
-            log.LogError($"Error: {exe.Message}");
+            log.LogError($"Error reading blob '{filename}' from '{containerUrl}': {exe.Message}");
             return ("", "");
          }
-
       }
       public async Task<bool> DownloadTranscriptionDocument(string path, string fileName, string containerUrl)
       {
          try
          {
-
             var containerClient = GetContainerClient(containerUrl);
             var blobClient = containerClient.GetBlobClient(fileName);
             string localFile = Path.Combine(path, fileName);
             await blobClient.DownloadToAsync(localFile);
-            log.LogInformation($"Translated document saved to:\t {localFile}");
+            log.LogInformation($"Translated document saved to: {localFile}");
             return true;
          }
          catch (Exception exe)
          {
-            log.LogError($"Error: {exe.Message}");
+            log.LogError($"Error downloading '{fileName}' from '{containerUrl}' to '{path}': {exe.Message}");
             return false;
          }
-
       }
-
       private BlobContainerClient GetContainerClient(string blobContainerUrl)
       {
          var containerUri = new Uri(blobContainerUrl);
@@ -184,14 +164,13 @@
       {
          try
          {
-
             var containerClient = GetContainerClient(blobContainerUrl);
             var blobClient = containerClient.GetBlobClient(file.Name);
             blobClient.DeleteIfExists();
          }
          catch (Exception exe)
          {
-            Console.WriteLine($"Error: {exe.Message}");
+            log.LogError($"Error deleting file '{file?.Name}' from '{blobContainerUrl}': {exe.Message}");
          }
       }
 

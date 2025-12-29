@@ -24,106 +24,119 @@ namespace SpeechAnalyticsLibrary
       private static HttpClient client = new HttpClient();
       public async Task<TranscriptionResponse?> StartBatchTranscription(string transcriptionEndpoint, string transcriptionKey, string sourceSas, string destinationSas, Uri? blobFile = null)
       {
-         //var whisper = await GetWhisperModel(transcriptionEndpoint, transcriptionKey);
-         //if (whisper.name != "")
-         //{
-         //   logger.LogInformation($"Using Whisper model: {whisper}");
-         //}
-
-         if(blobFile == null)
+         try
          {
-            var containerFile = await fileHandler.GetListOfAudioFilesInContainer(sourceSas);
-            if (containerFile.Count == 0)
-            {
-               logger.LogError("No files found in container");
-               return null;
-            }
-            else
-            {
-               logger.LogInformation("Files to transcribe:");
-               containerFile.ForEach(c => logger.LogInformation(c, ConsoleColor.DarkYellow));
-            }
-         }
-         var transcriptionReq = new Transcription()
-         {
-            DisplayName = Guid.NewGuid().ToString(),
-            Locale = "en-US",
-            //Model = new EntityReference()
+            //var whisper = await GetWhisperModel(transcriptionEndpoint, transcriptionKey);
+            //if (whisper.name != "")
             //{
-            //   Self = new Uri(whisper.url)
-            //},
-            Properties = new TranscriptionProperties()
+            //   logger.LogInformation($"Using Whisper model: {whisper}");
+            //}
+
+            if(blobFile == null)
             {
-               TimeToLive = "PT4H",
-               PunctuationMode = Models.SpeechToText.API.PunctuationMode.DictatedAndAutomatic,
-               ProfanityFilterMode = Models.SpeechToText.API.ProfanityFilterMode.Masked,
-               LanguageIdentification = new Models.SpeechToText.API.LanguageIdentificationProperties()
+               var containerFile = await fileHandler.GetListOfAudioFilesInContainer(sourceSas);
+               if (containerFile.Count == 0)
                {
-                  CandidateLocales = new List<string>() { "en-US", "es-ES" }
-               },
-               DiarizationEnabled = true,
-               Diarization = new Models.SpeechToText.API.DiarizationProperties()
+                  logger.LogError($"No files found in container '{sourceSas}'");
+                  return null;
+               }
+               else
                {
-                  Speakers = new Models.SpeechToText.API.DiarizationSpeakersProperties()
+                  logger.LogInformation("Files to transcribe:");
+                  containerFile.ForEach(c => logger.LogInformation(c, ConsoleColor.DarkYellow));
+               }
+            }
+            var transcriptionReq = new Transcription()
+            {
+               DisplayName = Guid.NewGuid().ToString(),
+               Locale = "en-US",
+               //Model = new EntityReference()
+               //{
+               //   Self = new Uri(whisper.url)
+               //},
+               Properties = new TranscriptionProperties()
+               {
+                  TimeToLive = "PT4H",
+                  PunctuationMode = Models.SpeechToText.API.PunctuationMode.DictatedAndAutomatic,
+                  ProfanityFilterMode = Models.SpeechToText.API.ProfanityFilterMode.Masked,
+                  LanguageIdentification = new Models.SpeechToText.API.LanguageIdentificationProperties()
                   {
-                     MinCount = 1,
-                     MaxCount = 10
+                     CandidateLocales = new List<string>() { "en-US", "es-ES" }
+                  },
+                  DiarizationEnabled = true,
+                  Diarization = new Models.SpeechToText.API.DiarizationProperties()
+                  {
+                     Speakers = new Models.SpeechToText.API.DiarizationSpeakersProperties()
+                     {
+                        MinCount = 1,
+                        MaxCount = 10
+                     }
+
+
                   }
 
-
                }
+            };
 
-            }
-         };
-
-         if (blobFile != null)
-         {
-            transcriptionReq.ContentUrls = new List<Uri>() { blobFile };
-         }
-         else
-         {
-            transcriptionReq.ContentContainerUrl = new Uri(sourceSas);
-         }
-
-         var transcrReqJson = JsonSerializer.Serialize(transcriptionReq, new JsonSerializerOptions() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
-
-         logger.LogDebug(transcrReqJson);
-         var createTime = DateTime.UtcNow;
-         using HttpRequestMessage request = new HttpRequestMessage();
-         {
-
-            StringContent requestContent = new StringContent(transcrReqJson, Encoding.UTF8, "application/json");
-
-            request.Method = HttpMethod.Post;
-            request.RequestUri = new Uri($"{transcriptionEndpoint}/speechtotext/{settings.ApiVersion}/transcriptions");
-            request.Headers.Add("Ocp-Apim-Subscription-Key", transcriptionKey);
-            request.Content = requestContent;
-
-            HttpResponseMessage response = await client.SendAsync(request);
-            string result = response.Content.ReadAsStringAsync().Result;
-            if (response.IsSuccessStatusCode)
+            if (blobFile != null)
             {
-               var transcrResponse = JsonSerializer.Deserialize<TranscriptionResponse>(result);
-               logger.LogInformation("Transcription accepted");
-               return transcrResponse;
+               transcriptionReq.ContentUrls = new List<Uri>() { blobFile };
             }
             else
             {
-               logger.LogInformation($"Status code: {response.StatusCode}");
-               logger.LogError(result);
+               transcriptionReq.ContentContainerUrl = new Uri(sourceSas);
             }
 
+            var transcrReqJson = JsonSerializer.Serialize(transcriptionReq, new JsonSerializerOptions() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+
+            logger.LogDebug(transcrReqJson);
+            var createTime = DateTime.UtcNow;
+            using HttpRequestMessage request = new HttpRequestMessage();
+            {
+
+               StringContent requestContent = new StringContent(transcrReqJson, Encoding.UTF8, "application/json");
+
+               request.Method = HttpMethod.Post;
+               request.RequestUri = new Uri($"{transcriptionEndpoint}/speechtotext/{settings.ApiVersion}/transcriptions");
+               request.Headers.Add("Ocp-Apim-Subscription-Key", transcriptionKey);
+               request.Content = requestContent;
+
+               HttpResponseMessage response = await client.SendAsync(request);
+               string result = response.Content.ReadAsStringAsync().Result;
+               if (response.IsSuccessStatusCode)
+               {
+                  var transcrResponse = JsonSerializer.Deserialize<TranscriptionResponse>(result);
+                  logger.LogInformation("Transcription accepted");
+                  return transcrResponse;
+               }
+               else
+               {
+                  logger.LogError($"Status code: {response.StatusCode} for transcription request to '{transcriptionEndpoint}'. Response: {result}");
+               }
+            }
+         }
+         catch (Exception ex)
+         {
+            logger.LogError($"Error in StartBatchTranscription: {ex.Message}");
          }
          return null;
       }
       public async Task<TranscriptionResponse?> StartBatchTranscription(string transcriptionEndpoint, string transcriptionKey, string sourceSas, string destinationSas, FileInfo? localFile = null)
       {
-         Uri blobFile = null;
-         if (localFile != null)
+         try
          {
-            blobFile = new Uri(await fileHandler.UploadBlobForTranscription(localFile, sourceSas));
+            Uri blobFile = null;
+            if (localFile != null)
+            {
+               blobFile = new Uri(await fileHandler.UploadBlobForTranscription(localFile, sourceSas));
+            }
+            return await StartBatchTranscription(transcriptionEndpoint, transcriptionKey, sourceSas, destinationSas, blobFile);
          }
-         return await StartBatchTranscription(transcriptionEndpoint, transcriptionKey, sourceSas, destinationSas, blobFile);
+         catch (Exception ex)
+         {
+            logger.LogError($"Error in StartBatchTranscription (FileInfo overload): {ex.Message}");
+            return null;
+         }
       }
       public async Task<TranscriptionResponse?> CheckTranscriptionStatus(string operationUrl, string transcriptionKey)
       {
@@ -131,61 +144,67 @@ namespace SpeechAnalyticsLibrary
          logger.LogInformation("Checking status of document translation:");
          while (true)
          {
-            using HttpRequestMessage request = new HttpRequestMessage();
+            try
             {
-
-               request.Method = HttpMethod.Get;
-               request.RequestUri = new Uri(operationUrl);
-               request.Headers.Add("Ocp-Apim-Subscription-Key", transcriptionKey);
-
-               HttpResponseMessage response = await client.SendAsync(request);
-               string result = response.Content.ReadAsStringAsync().Result;
-               if (response.IsSuccessStatusCode)
+               using HttpRequestMessage request = new HttpRequestMessage();
                {
-                  TranscriptionResponse resObj = null;
-                  try
+
+                  request.Method = HttpMethod.Get;
+                  request.RequestUri = new Uri(operationUrl);
+                  request.Headers.Add("Ocp-Apim-Subscription-Key", transcriptionKey);
+
+                  HttpResponseMessage response = await client.SendAsync(request);
+                  string result = response.Content.ReadAsStringAsync().Result;
+                  if (response.IsSuccessStatusCode)
                   {
-                     resObj = JsonSerializer.Deserialize<TranscriptionResponse>(result);
-                  }
-                  catch (Exception)
-                  {
-                     logger.LogInformation("Waiting for response");
-                     Thread.Sleep(sleepTime);
-                  }
-                  var status = resObj?.Status?.ToLower();
-                   switch (status)
-                  {
-                     case "succeeded":
-                        logger.LogInformation("\tTranscription complete");
-                        return resObj;
-                     case "notstarted":
-                        logger.LogInformation("\tWaiting for translation to start");
-                        break;
-                     case "running":
-                        logger.LogInformation("\tTranscription in progress");
-                        break;
-                     case "failed":
-                        logger.LogError($"\tTranscription failed: {resObj.Properties?.Error?.Message}");
-                        return null;
-                     default:
-                        logger.LogInformation($"\tStatus: {resObj?.Status}");
-                        if (resObj?.Properties?.Error != null)
-                        {
-                           logger.LogError($"\tError message: {resObj.Properties.Error.Message}");
+                     TranscriptionResponse resObj = null;
+                     try
+                     {
+                        resObj = JsonSerializer.Deserialize<TranscriptionResponse>(result);
+                     }
+                     catch (Exception ex)
+                     {
+                        logger.LogError($"Error deserializing transcription status response: {ex.Message}");
+                        logger.LogInformation("Waiting for response");
+                        Thread.Sleep(sleepTime);
+                        continue;
+                     }
+                     var status = resObj?.Status?.ToLower();
+                     switch (status)
+                     {
+                        case "succeeded":
+                           logger.LogInformation("\tTranscription complete");
+                           return resObj;
+                        case "notstarted":
+                           logger.LogInformation("\tWaiting for translation to start");
+                           break;
+                        case "running":
+                           logger.LogInformation("\tTranscription in progress");
+                           break;
+                        case "failed":
+                           logger.LogError($"\tTranscription failed: {resObj.Properties?.Error?.Message}");
                            return null;
-                        }
-                        break;
-
+                        default:
+                           logger.LogInformation($"\tStatus: {resObj?.Status}");
+                           if (resObj?.Properties?.Error != null)
+                           {
+                              logger.LogError($"\tError message: {resObj.Properties.Error.Message}");
+                              return null;
+                           }
+                           break;
+                     }
+                  }
+                  else
+                  {
+                     logger.LogError($"Status code: {response.StatusCode} for CheckTranscriptionStatus at '{operationUrl}'. Response: {result}");
+                     return null;
                   }
                }
-               else
-               {
-                  logger.LogError($"Status code: {response.StatusCode}");
-                  return null;
-               }
-
             }
-
+            catch (Exception ex)
+            {
+               logger.LogError($"Error in CheckTranscriptionStatus: {ex.Message}");
+            }
             Thread.Sleep(sleepTime);
          }
       }
@@ -229,17 +248,15 @@ namespace SpeechAnalyticsLibrary
                   }
                   else
                   {
-                     logger.LogError($"Status code: {response.StatusCode}");
-                     logger.LogError(result);
+                     logger.LogError($"Status code: {response.StatusCode} for GetTranscriptionText at '{translationSasUrl}'. Response: {result}");
                   }
                }
             }
             catch (Exception exe)
             {
-               logger.LogError($"Error: {exe.Message}");
+               logger.LogError($"Error in GetTranscriptionText for '{translationSasUrl}': {exe.Message}");
             }
          }
-
          return transcriptions;
       }
       public async Task<List<string>?> GetTranslationOutputLinks(string filesUrl, string transcriptionKey)
@@ -263,19 +280,17 @@ namespace SpeechAnalyticsLibrary
                }
                else
                {
-                  logger.LogInformation($"Status code: {response.StatusCode}");
-                  logger.LogError(result);
+                  logger.LogError($"Status code: {response.StatusCode} for GetTranslationOutputLinks at '{filesUrl}'. Response: {result}");
                   return null;
                }
             }
          }
          catch (Exception exe)
          {
-            logger.LogError($"Error: {exe.Message}");
+            logger.LogError($"Error in GetTranslationOutputLinks for '{filesUrl}': {exe.Message}");
             return null;
          }
       }
-
       public async Task<(string name, string url)> GetWhisperModel(string operationUrl, string transcriptionKey, string url = "")
       {
          try
@@ -307,15 +322,14 @@ namespace SpeechAnalyticsLibrary
                }
                else
                {
-                  logger.LogInformation($"Status code: {response.StatusCode}");
-                  logger.LogError(result);
+                  logger.LogError($"Status code: {response.StatusCode} for GetWhisperModel at '{operationUrl}'. Response: {result}");
                   return (string.Empty, string.Empty);
                }
             }
          }
          catch (Exception exe)
          {
-            logger.LogError($"Error: {exe.Message}");
+            logger.LogError($"Error in GetWhisperModel for '{operationUrl}': {exe.Message}");
             return (string.Empty, string.Empty);
          }
       }

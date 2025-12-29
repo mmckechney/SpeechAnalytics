@@ -7,5 +7,14 @@
             "request": "attach",
             "processId": "${command:azureFunctions.pickProcess}"
         }
+        ,
+        {
+            "name": "PowerShell: Launch Script",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/working.ps1",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
     ]
 }

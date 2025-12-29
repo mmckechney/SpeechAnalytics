@@ -20,7 +20,15 @@ namespace SpeechAnalyticsLibrary
       public async Task OnFunctionInvocationAsync(FunctionInvocationContext context, Func<FunctionInvocationContext, Task> next)
       {
          log.LogDebug($"{Environment.NewLine}INVOKING :{context.Function.Name}{Environment.NewLine}Arguments:{Environment.NewLine}{string.Join(Environment.NewLine, context.Arguments.Select(a => a.Key + ":" + a.Value.ToString()))}");
-         await next(context);
+         try
+         {
+            await next(context);
+         }
+         catch (Exception ex)
+         {
+            log.LogError($"Exception in function '{context.Function.Name}': {ex.Message}");
+            throw;
+         }
          log.LogDebug($"{Environment.NewLine}INVOKED :{context.Function.Name}{Environment.NewLine}Arguments:{Environment.NewLine}{string.Join(Environment.NewLine, context.Arguments.Select(a => a.Key + ":" + a.Value.ToString()))}{Environment.NewLine}Result:{context.Result}");
       }
 
