@@ -1,8 +1,11 @@
+using Azure.Messaging.EventGrid;
+using Azure.Messaging.EventGrid.SystemEvents;
 using Azure.Storage.Blobs;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using SpeechAnalyticsLibrary;
 using SpeechAnalyticsLibrary.Models;
+using System.IO;
 using System.Text.Json;
 namespace CallCenterFunction
 {
@@ -30,9 +33,35 @@ namespace CallCenterFunction
       }
 
       [Function(nameof(Transcription))]
-      public async Task RunAsync([BlobTrigger("audio/{name}", Connection = "AzureWebJobsStorage")] Stream stream, string name)
+      public async Task RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
       {
-         log.LogInformation($"C# Blob trigger function Processed blob\n Name: {name}");
+         if (eventGridEvent == null)
+         {
+            log.LogWarning("Event Grid trigger invoked with null event.");
+            return;
+         }
+
+         StorageBlobCreatedEventData blobCreatedData = null;
+         try
+         {
+            blobCreatedData = eventGridEvent.Data.ToObjectFromJson<StorageBlobCreatedEventData>();
+         }
+         catch (Exception ex)
+         {
+            log.LogError(ex, "Failed to deserialize Event Grid data for event {EventId}.", eventGridEvent.Id);
+            return;
+         }
+
+         if (blobCreatedData == null || string.IsNullOrWhiteSpace(blobCreatedData.Url))
+         {
+            log.LogWarning("Event Grid data missing blob Url. Event Id: {EventId}", eventGridEvent.Id);
+            return;
+         }
+
+         var blobUri = new Uri(blobCreatedData.Url);
+         var name = Path.GetFileName(blobUri.LocalPath.Trim('/'));
+
+         log.LogInformation("Event Grid processing blob: {BlobUri}", blobUri);
 
          List<(string source, string transcription)> transcriptions = null;
          var aiSvcs = settings.AiServices;

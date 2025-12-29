@@ -196,3 +196,4 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
 
 
 output functionPrincipalId string = functionApp.identity.principalId
+output functionAppResourceId string = functionApp.id

@@ -132,6 +132,7 @@ module permissions 'permissions.bicep' = {
     }
     dependsOn: [
         aiServices
+        function
     ]
 }
 
@@ -164,4 +165,26 @@ output audioContainerUri string = storage.outputs.audioContainerUri
 output transcriptionContainerUri string = storage.outputs.transcriptionContainerUri
 output aiSearchEndpoint string = aiSearch.outputs.aiSearchEndpoint
 output functionPrincipalId string = function.outputs.functionPrincipalId
+
+resource audioBlobEventSubscription 'Microsoft.EventGrid/eventSubscriptions@2022-06-15' = {
+    name: '${functionAppName}-audio-eg'
+    properties: {
+        destination: {
+            endpointType: 'AzureFunction'
+            properties: {
+                resourceId: function.outputs.functionAppResourceId
+                //functionName: 'Transcription'
+                maxEventsPerBatch: 1
+                preferredBatchSizeInKilobytes: 64
+            }
+        }
+        filter: {
+            subjectBeginsWith: '/blobServices/default/containers/${storage.outputs.audioContainerName}/'
+            includedEventTypes: [
+                'Microsoft.Storage.BlobCreated'
+            ]
+        }
+        eventDeliverySchema: 'EventGridSchema'
+    }
+}
 
