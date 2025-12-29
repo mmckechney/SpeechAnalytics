@@ -1,6 +1,5 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
-using Microsoft.Graph;
 using SpeechAnalyticsLibrary.Models;
 using System.ComponentModel.DataAnnotations;
 using System.Text;

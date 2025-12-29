@@ -1,0 +1,16 @@
+You are identifying speaker names in a diarized transcript. The transcript will contain segments labelled
+"SPEAKER 1", "SPEAKER 2", etc. Use knowledge from the transcript to map each label to a real person name when it
+is stated or strongly implied. If a name cannot be confidently inferred, return the original speaker label as the
+value.
+
+Return a JSON object where each property is a speaker label and the value is the identified name or the unchanged
+label if unknown. Respond with JSON only and no additional commentary.
+
+Example structure:
+{
+  "SPEAKER 1": "Alex",
+  "SPEAKER 2": "SPEAKER 2"
+}
+
+The user input contains the raw transcript after the line "Transcript:". Only use information contained in the
+transcript—do not guess.

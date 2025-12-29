@@ -8,6 +8,7 @@
       public AiSearch AiSearch { get; set; }
       public Storage Storage { get; set; }
       public AzureOpenAi AzureOpenAi { get; set; }
+      public FoundryAgentSettings FoundryAgent { get; set; } = new();
       public CosmosDB CosmosDB { get; set; }
    }
 
@@ -40,6 +41,16 @@
       public string ChatDeploymentName { get; set; }
       public string EmbeddingModel { get; set; }
       public string EmbeddingDeploymentName { get; set; }
+   }
+
+   public class FoundryAgentSettings
+   {
+      public string ProjectEndpoint { get; set; }
+      public string ModelDeploymentName { get; set; }
+      public string InsightsAgentName { get; set; }
+      public string SpeakerAgentName { get; set; }
+      public string QueryAgentName { get; set; }
+      public string AnswerAgentName { get; set; }
    }
    public class CosmosDB
    {

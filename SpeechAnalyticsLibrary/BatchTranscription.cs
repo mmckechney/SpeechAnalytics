@@ -12,13 +12,13 @@ namespace SpeechAnalyticsLibrary
    {
       ILogger<BatchTranscription> logger;
       FileHandling fileHandler;
-      SkAi skAi;
+      FoundryAgentClient agentClient;
       AiServices settings;
-      public BatchTranscription(ILogger<BatchTranscription> logger, FileHandling fileHandler, SkAi skAi, AnalyticsSettings settings)
+      public BatchTranscription(ILogger<BatchTranscription> logger, FileHandling fileHandler, FoundryAgentClient agentClient, AnalyticsSettings settings)
       {
          this.logger = logger;
          this.fileHandler = fileHandler;
-         this.skAi = skAi;
+         this.agentClient = agentClient;
          this.settings = settings.AiServices;
       }
       private static HttpClient client = new HttpClient();
@@ -231,7 +231,7 @@ namespace SpeechAnalyticsLibrary
                      logger.LogTrace($"Raw Transcription: {output.RawTranscriptionText}", ConsoleColor.DarkBlue);
 
                      logger.LogInformation("Attempting to identify speakers by name");
-                     var speakers = await skAi.GetSpeakerNames(tmpSource, output.SpeakerTranscriptionText);
+                     var speakers = await agentClient.GetSpeakerNames(tmpSource, output.SpeakerTranscriptionText);
                      if (speakers != null)
                      {
                         var tmp = output.SpeakerTranscriptionText;

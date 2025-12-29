@@ -1,17 +1,13 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
-using Microsoft.SemanticKernel;
 using Spectre.Console;
 using SpeechAnalyticsLibrary;
 using SpeechAnalyticsLibrary.Models;
 using System.Text.Json;
-using YamlDotNet.Serialization;
 
 namespace SpeechAnalytics
 {
-#pragma warning disable SKEXP0004 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-
    public class Program
    {
 
@@ -22,10 +18,9 @@ namespace SpeechAnalytics
       private static IdentityHelper identityHelper;
       private static CosmosHelper cosmosHelper;
       private static SpeechDiarization speechD;
-      private static IFunctionInvocationFilter functionFilter;
       private static IConfigurationRoot config;
       private static ILogger log;
-      private static SkAi skAi;
+      private static FoundryAgentClient agentClient;
       private static LogLevel logLevel = LogLevel.Information;
       static Program()
       {
@@ -60,9 +55,8 @@ namespace SpeechAnalytics
          identityHelper = new IdentityHelper(logFactory.CreateLogger<IdentityHelper>());
          fileHandler = new FileHandling(logFactory.CreateLogger<FileHandling>(), identityHelper);
          cosmosHelper = new CosmosHelper(logFactory.CreateLogger<CosmosHelper>(), settings);
-         functionFilter = new FunctionInvocationFilter(new LoggerFactory().CreateLogger<FunctionInvocationFilter>());
-         skAi = new SkAi(logFactory.CreateLogger<SkAi>(), config, logFactory, settings, cosmosHelper, loglevel, functionFilter);
-         batch = new BatchTranscription(logFactory.CreateLogger<BatchTranscription>(), fileHandler, skAi, settings);
+         agentClient = new FoundryAgentClient(logFactory.CreateLogger<FoundryAgentClient>(), settings, cosmosHelper);
+         batch = new BatchTranscription(logFactory.CreateLogger<BatchTranscription>(), fileHandler, agentClient, settings);
          speechD = new SpeechDiarization(logFactory.CreateLogger<SpeechDiarization>(), settings);
 
       }
@@ -125,7 +119,7 @@ namespace SpeechAnalytics
                   log.LogInformation("Answer:", ConsoleColor.Cyan);
                   try
                   {
-                     await foreach (var bit in skAi.AskQuestionsStreaming(selection))
+                     await foreach (var bit in agentClient.AskQuestionsStreaming(selection))
                      {
                         Console.Write(bit);
                      }
@@ -229,7 +223,7 @@ namespace SpeechAnalytics
                         string insights = string.Empty;
                         try
                         {
-                           insights = await skAi.GetTranscriptionInsights(transcription.transcription, transcription.source);
+                           insights = await agentClient.GetTranscriptionInsights(transcription.transcription, transcription.source);
                         }
                         catch (Exception ex)
                         {

@@ -5,7 +5,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SpeechAnalyticsLibrary;
 using SpeechAnalyticsLibrary.Models;
-using Microsoft.SemanticKernel;
 
 namespace DocumentQuestionsFunction
 {
@@ -57,7 +56,6 @@ namespace DocumentQuestionsFunction
          services.ConfigureFunctionsApplicationInsights();
          services.AddSingleton<BatchTranscription>();
          services.AddSingleton<IdentityHelper>();
-         services.AddSingleton<IFunctionInvocationFilter, FunctionInvocationFilter>();
          services.AddSingleton<FileHandling>();
          services.AddSingleton<CosmosHelper>();
          services.AddSingleton<SpeechDiarization>();
@@ -69,7 +67,7 @@ namespace DocumentQuestionsFunction
             Program.settings = settings;
             return settings;
          });
-         services.AddSingleton<SkAi>();
+         services.AddSingleton<FoundryAgentClient>();
          services.AddHttpClient();
 
       }

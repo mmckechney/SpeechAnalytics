@@ -12,18 +12,18 @@ namespace CallCenterFunction
       private AnalyticsSettings settings;
       private BatchTranscription batchTranscription;
       private IdentityHelper identityHelper; FileHandling fileHandler;
-      private SkAi skAi;
+      private FoundryAgentClient agentClient;
       private CosmosHelper cosmosHelper;
       private SpeechDiarization speechDiarization;
 
-      public Transcription(ILogger<Transcription> logger, AnalyticsSettings settings, BatchTranscription batchTranscription, IdentityHelper identityHelper, FileHandling fileHandler, SkAi skAi, CosmosHelper cosmosHelper, SpeechDiarization speechDiarization)
+      public Transcription(ILogger<Transcription> logger, AnalyticsSettings settings, BatchTranscription batchTranscription, IdentityHelper identityHelper, FileHandling fileHandler, FoundryAgentClient agentClient, CosmosHelper cosmosHelper, SpeechDiarization speechDiarization)
       {
          log = logger;
          this.fileHandler = fileHandler;
          this.settings = settings;
          this.batchTranscription = batchTranscription;
          this.identityHelper = identityHelper;
-         this.skAi = skAi;
+         this.agentClient = agentClient;
          this.cosmosHelper = cosmosHelper;
          this.speechDiarization = speechDiarization;
 
@@ -83,7 +83,7 @@ namespace CallCenterFunction
          {
 
             var existingInsightObj = await cosmosHelper.GetAnalysis(transcription.source);
-            string insights = await skAi.GetTranscriptionInsights(transcription.transcription, transcription.source);
+            string insights = await agentClient.GetTranscriptionInsights(transcription.transcription, transcription.source);
             if (string.IsNullOrWhiteSpace(insights))
             {
                log.LogError("Failed to get insights from Azure OpenAI");

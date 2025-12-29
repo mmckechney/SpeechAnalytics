@@ -9,12 +9,12 @@ namespace CallCenterFunction
    public class AskInsights
    {
       private readonly ILogger log;
-      private SkAi skAi;
+      private FoundryAgentClient agentClient;
 
-      public AskInsights(ILoggerFactory loggerFactory, SkAi skAi)
+      public AskInsights(ILoggerFactory loggerFactory, FoundryAgentClient agentClient)
       {
          log = loggerFactory.CreateLogger<AskInsights>();
-         this.skAi = skAi;
+         this.agentClient = agentClient;
       }
 
       [Function("AskInsights")]
@@ -31,7 +31,7 @@ namespace CallCenterFunction
          }
          else
          {
-            result = await skAi.AskQuestions(question);
+            result = await agentClient.AskQuestions(question);
          }
          response.WriteString(result); ;
 

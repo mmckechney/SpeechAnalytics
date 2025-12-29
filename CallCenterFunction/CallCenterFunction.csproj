@@ -23,7 +23,6 @@
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.1" />
       <PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
       <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.3.7" />
-      <PackageReference Include="Microsoft.SemanticKernel" Version="1.48.0" />
    </ItemGroup>
    <ItemGroup>
      <ProjectReference Include="..\SpeechAnalyticsLibrary\SpeechAnalyticsLibrary.csproj" />
