@@ -1,8 +1,9 @@
-﻿using Microsoft.CognitiveServices.Speech;
+﻿using Azure.Core;
+using Azure.Identity;
+using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
 using Microsoft.CognitiveServices.Speech.Transcription;
 using Microsoft.Extensions.Logging;
-using SpeechAnalyticsLibrary;
 using SpeechAnalyticsLibrary.Models;
 using System.Text;
 
@@ -10,23 +11,25 @@ namespace SpeechAnalyticsLibrary
 {
    public class SpeechDiarization
    {
-      ILogger<SpeechDiarization> log;
-      AiServices settings;
-      SpeechConfig speechConfig;
-      public SpeechDiarization(ILogger<SpeechDiarization> log, AnalyticsSettings settings)
+      private readonly ILogger<SpeechDiarization> log;
+      private readonly AiServices settings;
+      private readonly TokenCredential credential;
+      private readonly TokenRequestContext speechScope;
+
+      public SpeechDiarization(ILogger<SpeechDiarization> log, AnalyticsSettings settings, IdentityHelper identityHelper)
       {
          this.log = log;
          this.settings = settings.AiServices;
-
-         speechConfig = SpeechConfig.FromSubscription(this.settings.Key, this.settings.Region);
-         speechConfig.SpeechRecognitionLanguage = "en-US";
-
+         credential = identityHelper?.TokenCredential ?? new DefaultAzureCredential();
+         var tenantId = string.IsNullOrWhiteSpace(identityHelper?.TenantId) ? null : identityHelper.TenantId;
+         speechScope = new TokenRequestContext(new[] { "https://cognitiveservices.azure.com/.default" }, tenantId: tenantId);
       }
 
       public async Task<(string source, string transcription)> TranscribeWAVAudio(string transcriptionFileName, string wavFileaPath)
       {
          StringBuilder sb = new();
          var stopRecognition = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+         var speechConfig = await CreateSpeechConfigAsync();
 
          using (var audioConfig = AudioConfig.FromWavFileInput(wavFileaPath))
          {
@@ -81,6 +84,16 @@ namespace SpeechAnalyticsLibrary
             }
          }
          return (transcriptionFileName, sb.ToString());
+      }
+
+      private async Task<SpeechConfig> CreateSpeechConfigAsync(CancellationToken cancellationToken = default)
+      {
+         var token = await credential.GetTokenAsync(speechScope, cancellationToken);
+         var endpoint = new Uri($"https://{settings.Region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1");
+         var config = SpeechConfig.FromEndpoint(endpoint);
+         config.AuthorizationToken = token.Token;
+         config.SpeechRecognitionLanguage = "en-US";
+         return config;
       }
 
    }

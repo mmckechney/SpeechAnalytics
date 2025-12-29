@@ -8,9 +8,6 @@ param (
     [Parameter(Mandatory = $True)]
     [string]
     $azureOpenAiEndpoint,
-    [Parameter(Mandatory = $True)]
-    [string]
-    $azureOpenAiKey,
     [string]
     $chatModel = "gpt-4o",
     [string]
@@ -62,7 +59,7 @@ Write-Host "Embedding Deployment Name: $embeddingDeploymentName" -ForegroundColo
 Write-Host -ForegroundColor Cyan "Creating resource group $resourceGroup and required resources in $location" 
 $result = az deployment sub create --name $functionAppName --location $location --template-file .\infra\main.bicep --parameters resourceGroupName=$resourceGroup storageAccountName=$storageAcctName `
     aiServicesAccountName=$aiServicesAcctName location=$location `
-    azureOpenAiEndpoint=$azureOpenAiEndpoint azureOpenAiKey=$azureOpenAiKey `
+    azureOpenAiEndpoint=$azureOpenAiEndpoint `
     functionAppName=$functionAppName cosmosAccountName=$cosmosAccountName `
     keyVaultName=$keyVaultName aiSearchName=$aiSearchName userIdGuid=$userIdGuid| ConvertFrom-Json -Depth 10
 
@@ -74,53 +71,38 @@ if(!$?){ exit }
 if($null -eq $result) {exit}
 
 
-Write-Host -ForegroundColor Green "Getting translation account account key"
-$aiServicesKey = az cognitiveservices account keys list --resource-group $resourceGroup  --name $aiServicesAcctName -o tsv --query key1
-
-Write-Host -ForegroundColor Green "Getting AI Search account account key"
-$aiSearchKey = az search admin-key show --resource-group $resourceGroup  --service-name $aiSearchName -o tsv --query primaryKey
-
-Write-Host -ForegroundColor Green "Getting Cosmos Endpoint"
-$cosmosAccountEndpoint = az cosmosdb show --name $result.properties.outputs.cosmosAccountName.value --resource-group $resourceGroup -o tsv --query documentEndpoint
-
-Write-Host -ForegroundColor Green "Getting Storage Connection  and SAS Urls"
-$storageKey = az storage account keys list -n $storageAcctName -g $resourceGroup --query [0].value -o tsv
-$storageConnection = "DefaultEndpointsProtocol=https;AccountName=${storageAcctName};AccountKey=$($storageKey);EndpointSuffix=core.windows.net"
-
-$expiry = (Get-Date).ToUniversalTime().AddYears(1).ToString("yyyy-MM-ddTHH:mm:ssZ")
-$start =  (Get-Date).ToUniversalTime().AddMinutes(-5).ToString("yyyy-MM-ddTHH:mm:ssZ")
-$audioContainerName = $result.properties.outputs.audioContainerName.value
-$audioSasTmp = az storage container generate-sas --account-name $storageAcctName --name $audioContainerName   --account-key $storageKey --permissions racwdl --expiry $expiry --start $start --https-only -o tsv
-$audioSas = "https://$storageAcctName.blob.core.windows.net/$($audioContainerName)?$audioSasTmp"
-
-$transcriptContainerName = $result.properties.outputs.transcriptContainerName.value
-$transcriptSasTmp = az storage container generate-sas --account-name $storageAcctName --name $transcriptContainerName --account-key $storageKey --permissions racwdl --expiry $expiry --start $start --https-only -o tsv
-$transcriptSas = "https://$storageAcctName.blob.core.windows.net/$($transcriptContainerName)?$transcriptSasTmp"
+ $audioContainerName = $result.properties.outputs.audioContainerName.value
+ $transcriptContainerName = $result.properties.outputs.transcriptContainerName.value
+ $audioContainerUri = $result.properties.outputs.audioContainerUri.value
+ $transcriptionContainerUri = $result.properties.outputs.transcriptionContainerUri.value
+ $storageBlobServiceUri = $result.properties.outputs.storageBlobServiceUri.value
+ $storageQueueServiceUri = $result.properties.outputs.storageQueueServiceUri.value
+ $storageFileServiceUri = $result.properties.outputs.storageFileServiceUri.value
+ $storageTableServiceUri = $result.properties.outputs.storageTableServiceUri.value
+ $cosmosAccountEndpoint = $result.properties.outputs.cosmosEndpoint.value
+ $aiSearchEndpoint = $result.properties.outputs.aiSearchEndpoint.value
 
 
  $localsettings = @{
     "AiServices" = @{
         "Endpoint" = $result.properties.outputs.aiServicesEndpoint.value
-        "Key" = $aiServicesKey
         "ApiVersion" = "v3.2"
         "Region" = $location
     }
     "Storage" = @{
-       "SourceContainerUrl" = $audioSas
-        "TargetContainerUrl" = $transcriptSas
+       "SourceContainerUrl" = $audioContainerUri
+        "TargetContainerUrl" = $transcriptionContainerUri
     }
     "AzureOpenAi" = @{
      
         "EndPoint" = $azureOpenAiEndpoint
-        "Key" = $azureOpenAiKey
         "ChatModel" = $chatModel
         "ChatDeploymentName" = $chatDeploymentName
         "EmbeddingModel" = $embeddingModel
         "EmbeddingDeploymentName" = $embeddingDeploymentName
     }
     "AiSearch" = @{
-        "Endpoint" = "https://$($aiSearchName).search.windows.net"
-        "Key" = $aiSearchKey
+        "Endpoint" = $aiSearchEndpoint
     }
     "CosmosDb" = @{
         "AccountEndpoint" = $cosmosAccountEndpoint
@@ -141,31 +123,31 @@ if(!$?){ exit }
 $functionSettings = @{
     "IsEncrypted" = $false
     "Values" = @{
-        "AzureWebJobsStorage" = "UseDevelopmentStorage=true"
+        "AzureWebJobsStorage__credential" = "managedidentity"
+        "AzureWebJobsStorage__blobServiceUri" = $storageBlobServiceUri
+        "AzureWebJobsStorage__queueServiceUri" = $storageQueueServiceUri
+        "AzureWebJobsStorage__fileServiceUri" = $storageFileServiceUri
+        "AzureWebJobsStorage__tableServiceUri" = $storageTableServiceUri
         "FUNCTIONS_WORKER_RUNTIME" = "dotnet-isolated"
-        "StorageConnectionString" = $storageConnection
-    
         "AiServices:Endpoint" = $result.properties.outputs.aiServicesEndpoint.value
-        "AiServices:Key" = $aiServicesKey
         "AiServices:ApiVersion" = "v3.2"
         "AiServices:Region" = $location
 
-        "Storage:SourceContainerUrl" = $audioSas
-        "Storage:TargetContainerUrl" = $transcriptSas
+        "Storage:SourceContainerUrl" = $audioContainerUri
+        "Storage:TargetContainerUrl" = $transcriptionContainerUri
     
         "AzureOpenAi:EndPoint" = $azureOpenAiEndpoint
-        "AzureOpenAi:Key" = $azureOpenAiKey
         "AzureOpenAi:ChatModel" = $chatModel
         "AzureOpenAi:ChatDeploymentName" = $chatDeploymentName
         "AzureOpenAi:EmbeddingModel" = $embeddingModel
         "AzureOpenAi:EmbeddingDeploymentName" = $embeddingDeploymentName
 
-        "AiSearch:Endpoint" = "https://$($aiSearchName).search.windows.net"
-        "AiSearch:Key" = $aiSearchKey
+        "AiSearch:Endpoint" = $aiSearchEndpoint
 
         "CosmosDb:AccountEndpoint" = $cosmosAccountEndpoint
         "CosmosDb:ContainerName" = $result.properties.outputs.cosmosContainerName.value
         "CosmosDb:DatabaseName" = $result.properties.outputs.cosmosDataBaseName.value
+        "CosmosDb:TenantId" = $tenantId
     }
 }
 
@@ -195,6 +177,19 @@ Write-Host -ForegroundColor Green "Assigning CosmosDB roles to user $userName"
 
 $cid = az cosmosdb show --resource-group $resourceGroup --name $cosmosAccountName -o tsv --query id
 Write-Output "CosmosDB Resource ID $cid"
+$functionPrincipalId = $result.properties.outputs.functionPrincipalId.value
+$dataContributorRoleId = az cosmosdb sql role definition list --resource-group $resourceGroup --account-name $cosmosAccountName -o tsv --query "[?roleName=='Cosmos DB Built-in Data Contributor'].id | [0]"
+
+if($functionPrincipalId -and $dataContributorRoleId){
+    Write-Host -ForegroundColor Green "Assigning Cosmos DB Built-in Data Contributor to function identity"
+    az cosmosdb sql role assignment create `
+        --resource-group $resourceGroup `
+        --account-name $cosmosAccountName `
+        --role-definition-id $dataContributorRoleId `
+        --principal-id $functionPrincipalId `
+        --scope $cid | Out-Null
+}
+
 $ids = az cosmosdb sql role definition list --resource-group $resourceGroup --account-name $cosmosAccountName -o tsv --query "[].id" 
 Write-Output "CosmosDB Role Definitions ID $ids"
 foreach($id in $ids){

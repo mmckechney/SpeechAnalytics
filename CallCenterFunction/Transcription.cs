@@ -30,7 +30,7 @@ namespace CallCenterFunction
       }
 
       [Function(nameof(Transcription))]
-      public async Task RunAsync([BlobTrigger("audio/{name}", Connection = "StorageConnectionString")] Stream stream, string name)
+      public async Task RunAsync([BlobTrigger("audio/{name}", Connection = "AzureWebJobsStorage")] Stream stream, string name)
       {
          log.LogInformation($"C# Blob trigger function Processed blob\n Name: {name}");
 
@@ -42,14 +42,14 @@ namespace CallCenterFunction
          var blobClient = containerClient.GetBlobClient(name);
 
          //Start
-         var initialResponse = await batchTranscription.StartBatchTranscription(aiSvcs.Endpoint, aiSvcs.Key, settings.Storage.SourceContainerUrl, settings.Storage.TargetContainerUrl, blobClient.Uri);
+         var initialResponse = await batchTranscription.StartBatchTranscription(aiSvcs.Endpoint, settings.Storage.SourceContainerUrl, settings.Storage.TargetContainerUrl, blobClient.Uri);
 
          //Monitor
          TranscriptionResponse? statusResponse = null;
          if (initialResponse != null)
          {
             log.LogDebug($"Path to Transcription Job: {initialResponse.Self}");
-            statusResponse = await batchTranscription.CheckTranscriptionStatus(initialResponse.Self, aiSvcs.Key);
+            statusResponse = await batchTranscription.CheckTranscriptionStatus(initialResponse.Self);
          }
 
          //Get translation links
@@ -57,7 +57,7 @@ namespace CallCenterFunction
          if (statusResponse != null && statusResponse.Links != null && statusResponse.Links.Files != null)
          {
             log.LogDebug($"Path to Transcription Files List: ${statusResponse.Links.Files}");
-            translationLinks = await batchTranscription.GetTranslationOutputLinks(statusResponse.Links.Files, aiSvcs.Key);
+            translationLinks = await batchTranscription.GetTranslationOutputLinks(statusResponse.Links.Files);
          }
          else
          {

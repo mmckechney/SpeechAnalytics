@@ -56,8 +56,8 @@ namespace SpeechAnalytics
          fileHandler = new FileHandling(logFactory.CreateLogger<FileHandling>(), identityHelper);
          cosmosHelper = new CosmosHelper(logFactory.CreateLogger<CosmosHelper>(), settings);
          agentClient = new FoundryAgentClient(logFactory.CreateLogger<FoundryAgentClient>(), settings, cosmosHelper);
-         batch = new BatchTranscription(logFactory.CreateLogger<BatchTranscription>(), fileHandler, agentClient, settings);
-         speechD = new SpeechDiarization(logFactory.CreateLogger<SpeechDiarization>(), settings);
+         batch = new BatchTranscription(logFactory.CreateLogger<BatchTranscription>(), fileHandler, agentClient, settings, identityHelper);
+         speechD = new SpeechDiarization(logFactory.CreateLogger<SpeechDiarization>(), settings, identityHelper);
 
       }
       static async Task Main(string[] args)
@@ -363,20 +363,20 @@ namespace SpeechAnalytics
             fileInfo = new FileInfo(path);
          }
          log.LogInformation("");
-         var initialResponse = await batch.StartBatchTranscription(aiSvcs.Endpoint, aiSvcs.Key, settings.Storage.SourceContainerUrl, settings.Storage.TargetContainerUrl, fileInfo);
+            var initialResponse = await batch.StartBatchTranscription(aiSvcs.Endpoint, settings.Storage.SourceContainerUrl, settings.Storage.TargetContainerUrl, fileInfo);
 
          TranscriptionResponse? statusResponse = null;
          if (initialResponse != null)
          {
             log.LogDebug($"Path to Transcription Job: {initialResponse.Self}");
-            statusResponse = await batch.CheckTranscriptionStatus(initialResponse.Self, aiSvcs.Key);
+            statusResponse = await batch.CheckTranscriptionStatus(initialResponse.Self);
          }
 
          List<string>? translationLinks = null;
          if (statusResponse != null && statusResponse.Links != null && statusResponse.Links.Files != null)
          {
             log.LogDebug($"Path to Transcription Files List: ${statusResponse.Links.Files}");
-            translationLinks = await batch.GetTranslationOutputLinks(statusResponse.Links.Files, aiSvcs.Key);
+            translationLinks = await batch.GetTranslationOutputLinks(statusResponse.Links.Files);
          }
          else
          {

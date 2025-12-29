@@ -9,16 +9,15 @@ param aiServicesAccountName string
 param aiServicesApiVersion string = 'v3.2-preview.1'
 param cosmosDbName string
 param cosmosDbContainerName string
-param keyVaultName string
-param cosmosSecretName string
-param audioSecretName string
-param transcriptionSecretName string
-param aiServicesSecretName string
-param openAiKeySecretName string
-param openAiEndpointSecretName string
-param storgeConnectionSecretName string
-param aiSearchEndpointSecretName string
-param aiSearchAdminKeySecretName string
+param storageBlobServiceUri string
+param storageQueueServiceUri string
+param storageTableServiceUri string
+param storageFileServiceUri string
+param audioContainerUri string
+param transcriptionContainerUri string
+param cosmosAccountEndpoint string
+param aiSearchEndpoint string
+param openAiEndpoint string
 
 
 resource aiServices 'Microsoft.CognitiveServices/accounts@2023-05-01' existing = {
@@ -28,7 +27,6 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2023-05-01' existing =
 resource storageAccount 'Microsoft.Storage/storageAccounts@2021-04-01' existing = {
   name: storageAccountName
 }
-var storageAccountConnection = 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2021-01-15' = {
   name: '${functionAppName}-asp'
@@ -69,16 +67,28 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
       netFrameworkVersion: 'v9.0'
       appSettings: [
         {
-          name: 'AzureWebJobsStorage'
-          value:storageAccountConnection
+          name: 'AzureWebJobsStorage__credential'
+          value: 'managedidentity'
         }
         {
-          name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
-          value: storageAccountConnection
+          name: 'AzureWebJobsStorage__blobServiceUri'
+          value: storageBlobServiceUri
         }
         {
-          name: 'StorageConnectionString'
-          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${storgeConnectionSecretName})'
+          name: 'AzureWebJobsStorage__queueServiceUri'
+          value: storageQueueServiceUri
+        }
+        {
+          name: 'AzureWebJobsStorage__fileServiceUri'
+          value: storageFileServiceUri
+        }
+        {
+          name: 'AzureWebJobsStorage__tableServiceUri'
+          value: storageTableServiceUri
+        }
+        {
+          name: 'WEBSITE_RUN_FROM_PACKAGE'
+          value: '1'
         }
         {
           name: 'AzureOpenAi:ChatModel'
@@ -97,20 +107,16 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: openAIEmbeddingDeploymentName
         }
         {
-          name: 'AzureOpenAi:Key'
-          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${openAiKeySecretName})'
-        }
-        {
           name: 'AzureOpenAi:EndPoint'
-          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${openAiEndpointSecretName})'
+          value: openAiEndpoint
         }
         {
           name : 'Storage:TargetContainerUrl'
-          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${transcriptionSecretName})'
+          value: transcriptionContainerUri
         } 
         {
           name : 'Storage:SourceContainerUrl'
-          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${audioSecretName})'
+          value: audioContainerUri
         }
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
@@ -129,10 +135,6 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: aiServices.properties.endpoint
         }
         {
-          name: 'AiServices:Key'
-          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${aiServicesSecretName})'
-        }
-        {
           name: 'AiServices:Region'
           value: aiServices.location
         }
@@ -149,16 +151,16 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: cosmosDbContainerName
         }
         {
-          name: 'CosmosDb:ConnectionString'
-          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${cosmosSecretName})'
+          name: 'CosmosDb:AccountEndpoint'
+          value: cosmosAccountEndpoint
         }
         {
-          name: 'AiSearch:Key'
-          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${aiSearchAdminKeySecretName})'
+          name: 'CosmosDb:TenantId'
+          value: subscription().tenantId
         }
         {
           name: 'AiSearch:Endpoint'
-          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${aiSearchEndpointSecretName})'
+          value: aiSearchEndpoint
         }
       ]
     }

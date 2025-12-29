@@ -2,13 +2,6 @@
 param cosmosDataBaseName string
 param cosmosContainerName string
 param location string = resourceGroup().location
-param keyVaultName string
-
-
-resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
-   name: keyVaultName
- }
-
 resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-11-15' = {
    name:cosmosAccountName
    location: location
@@ -88,19 +81,8 @@ resource cosmosContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/con
   }
 }
 
-resource cosmosConnection 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
-   parent: keyVault
-   name: 'CosmosConnection'
-   properties: {
-     value:  cosmosAccount.listConnectionStrings().connectionStrings[0].connectionString
-   }
- }
- 
-
-
 output cosmosAccountEndpoint string = cosmosAccount.properties.documentEndpoint
 output cosmosAccountName string = cosmosAccount.name
 output cosmosContainerName string = cosmosContainer.name
 output cosmosDataBaseName string = cosmosDatabase.name
-output cosmosSecretName string = cosmosConnection.name
 output cosmosResourceId string = cosmosAccount.id

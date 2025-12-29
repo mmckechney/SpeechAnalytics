@@ -7,10 +7,8 @@ param resourceGroupName string
 param storageAccountName string
 param aiServicesAccountName string
 param functionAppName string
-param azureOpenAiKey string
 param azureOpenAiEndpoint string
 param cosmosAccountName string
-param keyVaultName string
 param aiSearchName string
 param userIdGuid string
 
@@ -26,7 +24,6 @@ module storage 'storage.bicep' = {
     params: {
         location: location
         storageAccountName:storageAccountName
-        keyVaultName: keyVaultName
       
     }
     dependsOn: [
@@ -40,7 +37,6 @@ module aiServices 'aiservices.bicep' = {
 	params: {
         location: location
 		aiServicesAccountName: aiServicesAccountName
-        keyVaultName: keyVaultName
         
 	}
     dependsOn: [
@@ -55,7 +51,6 @@ module aiSearch 'aisearch.bicep' = {
     params: {
         location: location
         aiSearchName:aiSearchName
-        keyVaultName: keyVaultName
         
     }
     dependsOn: [
@@ -85,11 +80,9 @@ module cosmosDB 'cosmos.bicep' = {
         cosmosAccountName: cosmosAccountName
         cosmosContainerName: 'analyticscontainer'
         cosmosDataBaseName: 'speechanalyticsdb'
-        keyVaultName: keyVaultName
     }
     dependsOn: [
         rg
-        keyvault
     ]
 }
 
@@ -102,17 +95,16 @@ module function 'function.bicep' = {
         cosmosDbContainerName: cosmosDB.outputs.cosmosContainerName
         cosmosDbName: cosmosDB.outputs.cosmosDataBaseName
         functionAppName: functionAppName
-        keyVaultName: keyvault.name
-        aiServicesSecretName: aiServices.outputs.aiServicesSecretName
-        audioSecretName: storage.outputs.audioSecretname
-        transcriptionSecretName: storage.outputs.transcriptionSecretname
-        cosmosSecretName: cosmosDB.outputs.cosmosSecretName
-        openAiEndpointSecretName: keyvault.outputs.openAiEndpointSecretName
-        openAiKeySecretName: keyvault.outputs.openAiKeySecretName
-        storgeConnectionSecretName: storage.outputs.storageConnectionSecretName
         storageAccountName: storageAccountName
-        aiSearchAdminKeySecretName: aiSearch.outputs.aiSearchAdminKeySecretName
-        aiSearchEndpointSecretName: aiSearch.outputs.aiSearchEndpointSecretName
+        storageBlobServiceUri: storage.outputs.blobServiceUri
+        storageQueueServiceUri: storage.outputs.queueServiceUri
+        storageTableServiceUri: storage.outputs.tableServiceUri
+        storageFileServiceUri: storage.outputs.fileServiceUri
+        audioContainerUri: storage.outputs.audioContainerUri
+        transcriptionContainerUri: storage.outputs.transcriptionContainerUri
+        cosmosAccountEndpoint: cosmosDB.outputs.cosmosAccountEndpoint
+        aiSearchEndpoint: aiSearch.outputs.aiSearchEndpoint
+        openAiEndpoint: azureOpenAiEndpoint
 
     }
     dependsOn: [
@@ -120,17 +112,18 @@ module function 'function.bicep' = {
     ]
 }
 
-module keyvault 'keyvault.bicep' = {
+module permissions 'permissions.bicep' = {
     scope: resourceGroup(resourceGroupName)
-    name: 'keyvault'
-    params:{
-        keyVaultName: keyVaultName
-        openAiEndpoint: azureOpenAiEndpoint 
-        openAiKey:azureOpenAiKey
-        location: location
+    name: 'permissions'
+    params: {
+        aiServicesAccountName: aiServicesAccountName
+        aiSearchName: aiSearchName
+        cosmosAccountName: cosmosDB.outputs.cosmosAccountName
+        functionPrincipalId: function.outputs.functionPrincipalId
+        userPrincipalId: userIdGuid
     }
     dependsOn: [
-        rg
+        aiServices
     ]
 }
 
@@ -155,4 +148,12 @@ output cosmosDataBaseName string = cosmosDB.outputs.cosmosDataBaseName
 output cosmosResourceId string = cosmosDB.outputs.cosmosResourceId
 output audioContainerName string = storage.outputs.audioContainerName
 output transcriptContainerName string = storage.outputs.transcriptContainerName
+output storageBlobServiceUri string = storage.outputs.blobServiceUri
+output storageQueueServiceUri string = storage.outputs.queueServiceUri
+output storageTableServiceUri string = storage.outputs.tableServiceUri
+output storageFileServiceUri string = storage.outputs.fileServiceUri
+output audioContainerUri string = storage.outputs.audioContainerUri
+output transcriptionContainerUri string = storage.outputs.transcriptionContainerUri
+output aiSearchEndpoint string = aiSearch.outputs.aiSearchEndpoint
+output functionPrincipalId string = function.outputs.functionPrincipalId
 

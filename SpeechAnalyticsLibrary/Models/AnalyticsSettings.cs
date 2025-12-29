@@ -15,13 +15,11 @@
    public class AiSearch
    {
       public string Endpoint { get; set; }
-      public string Key { get; set; }
    }
 
    public class AiServices
    {
       public string Endpoint { get; set; }
-      public string Key { get; set; }
 
       public string Region { get; set; }
       public string ApiVersion { get; set; } = "v3.2-preview.1";
@@ -36,7 +34,6 @@
    public class AzureOpenAi
    {
       public string EndPoint { get; set; }
-      public string Key { get; set; }
       public string ChatModel { get; set; }
       public string ChatDeploymentName { get; set; }
       public string EmbeddingModel { get; set; }

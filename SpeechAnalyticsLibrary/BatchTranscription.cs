@@ -1,31 +1,43 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Azure.Core;
+using Azure.Identity;
+using Microsoft.Extensions.Logging;
 using SpeechAnalyticsLibrary.Models;
 using SpeechAnalyticsLibrary.Models.SpeechToText;
 using SpeechAnalyticsLibrary.Models.SpeechToText.API;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 
 
 namespace SpeechAnalyticsLibrary
 {
    public class BatchTranscription
    {
-      ILogger<BatchTranscription> logger;
-      FileHandling fileHandler;
-      FoundryAgentClient agentClient;
-      AiServices settings;
-      public BatchTranscription(ILogger<BatchTranscription> logger, FileHandling fileHandler, FoundryAgentClient agentClient, AnalyticsSettings settings)
+      private readonly ILogger<BatchTranscription> logger;
+      private readonly FileHandling fileHandler;
+      private readonly FoundryAgentClient agentClient;
+      private readonly AiServices settings;
+      private readonly TokenCredential credential;
+      private readonly TokenRequestContext speechScope;
+
+      public BatchTranscription(ILogger<BatchTranscription> logger, FileHandling fileHandler, FoundryAgentClient agentClient, AnalyticsSettings settings, IdentityHelper identityHelper)
       {
          this.logger = logger;
          this.fileHandler = fileHandler;
          this.agentClient = agentClient;
          this.settings = settings.AiServices;
+         credential = identityHelper?.TokenCredential ?? new DefaultAzureCredential();
+         var tenantId = string.IsNullOrWhiteSpace(identityHelper?.TenantId) ? null : identityHelper.TenantId;
+         speechScope = new TokenRequestContext(new[] { "https://cognitiveservices.azure.com/.default" }, tenantId: tenantId);
       }
       private static HttpClient client = new HttpClient();
-      public async Task<TranscriptionResponse?> StartBatchTranscription(string transcriptionEndpoint, string transcriptionKey, string sourceSas, string destinationSas, Uri? blobFile = null)
+
+      public async Task<TranscriptionResponse?> StartBatchTranscription(string transcriptionEndpoint, string sourceContainerUrl, string destinationContainerUrl, Uri? blobFile = null)
       {
          try
          {
+         _ = destinationContainerUrl;
             //var whisper = await GetWhisperModel(transcriptionEndpoint, transcriptionKey);
             //if (whisper.name != "")
             //{
@@ -34,10 +46,10 @@ namespace SpeechAnalyticsLibrary
 
             if(blobFile == null)
             {
-               var containerFile = await fileHandler.GetListOfAudioFilesInContainer(sourceSas);
+               var containerFile = await fileHandler.GetListOfAudioFilesInContainer(sourceContainerUrl);
                if (containerFile.Count == 0)
                {
-                  logger.LogError($"No files found in container '{sourceSas}'");
+                  logger.LogError($"No files found in container '{sourceContainerUrl}'");
                   return null;
                }
                else
@@ -84,7 +96,7 @@ namespace SpeechAnalyticsLibrary
             }
             else
             {
-               transcriptionReq.ContentContainerUrl = new Uri(sourceSas);
+               transcriptionReq.ContentContainerUrl = new Uri(sourceContainerUrl);
             }
 
             var transcrReqJson = JsonSerializer.Serialize(transcriptionReq, new JsonSerializerOptions() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
@@ -98,7 +110,8 @@ namespace SpeechAnalyticsLibrary
 
                request.Method = HttpMethod.Post;
                request.RequestUri = new Uri($"{transcriptionEndpoint}/speechtotext/{settings.ApiVersion}/transcriptions");
-               request.Headers.Add("Ocp-Apim-Subscription-Key", transcriptionKey);
+               var token = await credential.GetTokenAsync(speechScope, CancellationToken.None);
+               request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
                request.Content = requestContent;
 
                HttpResponseMessage response = await client.SendAsync(request);
@@ -121,16 +134,17 @@ namespace SpeechAnalyticsLibrary
          }
          return null;
       }
-      public async Task<TranscriptionResponse?> StartBatchTranscription(string transcriptionEndpoint, string transcriptionKey, string sourceSas, string destinationSas, FileInfo? localFile = null)
+      public async Task<TranscriptionResponse?> StartBatchTranscription(string transcriptionEndpoint, string sourceContainerUrl, string destinationContainerUrl, FileInfo? localFile = null)
       {
          try
          {
+         _ = destinationContainerUrl;
             Uri blobFile = null;
             if (localFile != null)
             {
-               blobFile = new Uri(await fileHandler.UploadBlobForTranscription(localFile, sourceSas));
+               blobFile = new Uri(await fileHandler.UploadBlobForTranscription(localFile, sourceContainerUrl));
             }
-            return await StartBatchTranscription(transcriptionEndpoint, transcriptionKey, sourceSas, destinationSas, blobFile);
+            return await StartBatchTranscription(transcriptionEndpoint, sourceContainerUrl, destinationContainerUrl, blobFile);
          }
          catch (Exception ex)
          {
@@ -138,7 +152,7 @@ namespace SpeechAnalyticsLibrary
             return null;
          }
       }
-      public async Task<TranscriptionResponse?> CheckTranscriptionStatus(string operationUrl, string transcriptionKey)
+      public async Task<TranscriptionResponse?> CheckTranscriptionStatus(string operationUrl)
       {
          int sleepTime = 4000;
          logger.LogInformation("Checking status of document translation:");
@@ -151,7 +165,8 @@ namespace SpeechAnalyticsLibrary
 
                   request.Method = HttpMethod.Get;
                   request.RequestUri = new Uri(operationUrl);
-                  request.Headers.Add("Ocp-Apim-Subscription-Key", transcriptionKey);
+                  var token = await credential.GetTokenAsync(speechScope, CancellationToken.None);
+                  request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
 
                   HttpResponseMessage response = await client.SendAsync(request);
                   string result = response.Content.ReadAsStringAsync().Result;
@@ -259,7 +274,7 @@ namespace SpeechAnalyticsLibrary
          }
          return transcriptions;
       }
-      public async Task<List<string>?> GetTranslationOutputLinks(string filesUrl, string transcriptionKey)
+      public async Task<List<string>?> GetTranslationOutputLinks(string filesUrl)
       {
          try
          {
@@ -267,7 +282,8 @@ namespace SpeechAnalyticsLibrary
             {
                request.Method = HttpMethod.Get;
                request.RequestUri = new Uri(filesUrl);
-               request.Headers.Add("Ocp-Apim-Subscription-Key", transcriptionKey);
+               var token = await credential.GetTokenAsync(speechScope, CancellationToken.None);
+               request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
 
                HttpResponseMessage response = await client.SendAsync(request);
                string result = response.Content.ReadAsStringAsync().Result;
@@ -291,7 +307,7 @@ namespace SpeechAnalyticsLibrary
             return null;
          }
       }
-      public async Task<(string name, string url)> GetWhisperModel(string operationUrl, string transcriptionKey, string url = "")
+      public async Task<(string name, string url)> GetWhisperModel(string operationUrl, string url = "")
       {
          try
          {
@@ -306,7 +322,8 @@ namespace SpeechAnalyticsLibrary
                {
                   request.RequestUri = new Uri(url);
                }
-               request.Headers.Add("Ocp-Apim-Subscription-Key", transcriptionKey);
+               var token = await credential.GetTokenAsync(speechScope, CancellationToken.None);
+               request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
 
                HttpResponseMessage response = await client.SendAsync(request);
                string result = response.Content.ReadAsStringAsync().Result;
@@ -316,7 +333,7 @@ namespace SpeechAnalyticsLibrary
                   var whisper = models.Values.Where(models => models.DisplayName.Contains("Whisper")).OrderBy(m => m.LastActionDateTime).FirstOrDefault();
                   if (whisper == null)
                   {
-                     return await GetWhisperModel(operationUrl, transcriptionKey, models.NextLink);
+                     return await GetWhisperModel(operationUrl, models.NextLink);
                   }
                   return (whisper.DisplayName,whisper.Self);
                }
