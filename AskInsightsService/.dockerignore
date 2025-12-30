@@ -1,0 +1,40 @@
+
+# Ignore .NET build outputs
+bin/
+obj/
+
+# User-specific files
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+
+# Visual Studio / IDE caches
+.vs/
+.vscode/
+
+# Logs
+*.log
+
+# Local development artifacts
+*.db
+*.sqlite
+*.pdb
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Node modules (if present in a mixed project)
+node_modules/
+
+# Azure Dev artifacts
+.env
+secrets.json
+
+# Do NOT ignore Dockerfile (important!)
+!Dockerfile

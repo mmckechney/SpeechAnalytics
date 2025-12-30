@@ -4,14 +4,10 @@ param logAnalyticsName string
 param askAppName string
 param transcriptionAppName string
 param containerRegistryServer string = ''
-param containerRegistryUsername string = ''
 @secure()
-param containerRegistryPassword string = ''
 param askImage string
 param transcriptionImage string
-param aiServicesEndpoint string
-param aiServicesRegion string
-param aiServicesApiVersion string
+param aiSpeechServicesEndpoint string
 param aiSearchEndpoint string
 param storageSourceContainerUrl string
 param storageTargetContainerUrl string
@@ -19,10 +15,8 @@ param cosmosAccountEndpoint string
 param cosmosDatabaseName string
 param cosmosContainerName string
 param openAiEndpoint string
-param openAiChatModel string
-param openAiChatDeploymentName string
-param openAiEmbeddingModel string
-param openAiEmbeddingDeploymentName string
+param chatDeploymentName string
+param embeddingDeploymentName string
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
   name: logAnalyticsName
@@ -48,20 +42,6 @@ resource managedEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
   }
 }
 
-var registrySecrets = empty(containerRegistryServer) ? [] : [
-  {
-    name: 'registry-password'
-    value: containerRegistryPassword
-  }
-]
-
-var registries = empty(containerRegistryServer) ? [] : [
-  {
-    server: containerRegistryServer
-    username: containerRegistryUsername
-    passwordSecretRef: 'registry-password'
-  }
-]
 
 var commonEnvs = [
   {
@@ -69,32 +49,16 @@ var commonEnvs = [
     value: openAiEndpoint
   }
   {
-    name: 'AzureOpenAi__ChatModel'
-    value: openAiChatModel
-  }
-  {
     name: 'AzureOpenAi__ChatDeploymentName'
-    value: openAiChatDeploymentName
-  }
-  {
-    name: 'AzureOpenAi__EmbeddingModel'
-    value: openAiEmbeddingModel
+    value: chatDeploymentName
   }
   {
     name: 'AzureOpenAi__EmbeddingDeploymentName'
-    value: openAiEmbeddingDeploymentName
+    value: embeddingDeploymentName
   }
   {
     name: 'AiServices__Endpoint'
-    value: aiServicesEndpoint
-  }
-  {
-    name: 'AiServices__Region'
-    value: aiServicesRegion
-  }
-  {
-    name: 'AiServices__ApiVersion'
-    value: aiServicesApiVersion
+    value: aiSpeechServicesEndpoint
   }
   {
     name: 'AiSearch__Endpoint'
@@ -140,8 +104,12 @@ resource askInsightsApp 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: 8080
         transport: 'auto'
       }
-      registries: registries
-      secrets: registrySecrets
+      registries: [
+        {
+          server: containerRegistryServer
+          identity: 'system'
+        }
+      ]
     }
     template: {
       containers: [
@@ -173,8 +141,12 @@ resource transcriptionApp 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: 8080
         transport: 'auto'
       }
-      registries: registries
-      secrets: registrySecrets
+      registries:  [
+        {
+          server: containerRegistryServer
+          identity: 'system'
+        }
+      ]
     }
     template: {
       containers: [
@@ -194,5 +166,5 @@ resource transcriptionApp 'Microsoft.App/containerApps@2024-03-01' = {
 
 output askPrincipalId string = askInsightsApp.identity.principalId
 output transcriptionPrincipalId string = transcriptionApp.identity.principalId
-output transcriptionFqdn string = reference(transcriptionApp.id, '2024-03-01', 'Full').properties.configuration.ingress.fqdn
-output askFqdn string = reference(askInsightsApp.id, '2024-03-01', 'Full').properties.configuration.ingress.fqdn
+output transcriptionFqdn string = transcriptionApp.properties.configuration.ingress.fqdn
+output askFqdn string = askInsightsApp.properties.configuration.ingress.fqdn

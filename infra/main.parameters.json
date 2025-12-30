@@ -2,44 +2,53 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+     "chatDeploymentName": {
+      "value": "gpt-5-mini"
+    },
+     "embeddingDeploymentName": {
+      "value": "text-embedding-ada-002"
+    },
     "location": {
-      "value": "{{AZURE_LOCATION}}"
+      "value": "${AZURE_LOCATION}"
     },
     "resourceGroupName": {
-      "value": "{{AZURE_RESOURCE_GROUP}}"
+      "value": "${AZURE_RESOURCE_GROUP}"
+    },
+    "containerRegistryName": {
+      "value": "${AZURE_CONTAINER_REGISTRY_NAME}"
     },
     "storageAccountName": {
-      "value": "{{APP_BASE_NAME}}storage"
+      "value": "${AZURE_STORAGE_ACCOUNT}"
     },
-    "aiServicesAccountName": {
-      "value": "{{APP_BASE_NAME}}-aiservices"
+    "foundryProjectName": {
+      "value": "${AZURE_AIFOUNDRY}"
     },
-    "functionAppName": {
-      "value": "{{APP_BASE_NAME}}"
+    "containerAppName": {
+      "value": "${AZURE_CONTAINER_APP_NAME}"
     },
     "cosmosAccountName": {
-      "value": "{{APP_BASE_NAME}}-cosmos"
+      "value": "${AZURE_COSMOS_ACCOUNT_NAME}"
     },
     "aiSearchName": {
-      "value": "{{APP_BASE_NAME}}-search"
+      "value": "${AZURE_AISEARCH_NAME}"
     },
     "userIdGuid": {
-      "value": "{{AZURE_PRINCIPAL_ID}}"
+      "value": "${AZURE_CURRENT_USER_OBJECT_ID}"
     },
     "askContainerImage": {
-      "value": "{{AZD_SERVICE_ASKINSIGHTS_IMAGE}}"
+      "value": "${AZD_SERVICE_ASKINSIGHTS_IMAGE}"
     },
     "transcriptionContainerImage": {
-      "value": "{{AZD_SERVICE_TRANSCRIPTION_IMAGE}}"
+      "value": "${AZD_SERVICE_TRANSCRIPTION_IMAGE}"
     },
     "containerRegistryServer": {
-      "value": "{{AZURE_CONTAINER_REGISTRY_ENDPOINT}}"
+      "value": "${AZURE_CONTAINER_REGISTRY_ENDPOINT}"
     },
     "containerRegistryUsername": {
-      "value": "{{AZURE_CONTAINER_REGISTRY_USERNAME}}"
+      "value": "${AZURE_CONTAINER_REGISTRY_USERNAME}"
     },
     "containerRegistryPassword": {
-      "value": "{{AZURE_CONTAINER_REGISTRY_PASSWORD}}"
+      "value": "${AZURE_CONTAINER_REGISTRY_PASSWORD}"
     }
   }
 }

@@ -17,14 +17,13 @@ $safeEnvName = ($envName -replace '[^a-zA-Z0-9]', '').ToLower()
 azd env set "AZURE_LOCATION" $AZURE_LOCATION
 azd env set "AZURE_RESOURCE_GROUP" $envName-rg
 azd env set "AZURE_STORAGE_ACCOUNT" "$($safeEnvName)storage"
-azd env set "AZURE_AISERVICES_ACCOUNT_NAME" "$envName-aiservices"
-azd env set "AZURE_FUNCTION_APP_NAME" "$envName-func"
+#azd env set "AZURE_AISERVICES_ACCOUNT_NAME" "$envName-aiservices"
+azd env set "AZURE_CONTAINER_APP_NAME" "$safeEnvName-app"
 azd env set "AZURE_AIFOUNDRY" "$envName-foundry"
 azd env set "AZURE_COSMOS_ACCOUNT_NAME" "$safeEnvName-cosmos"
 azd env set "AZURE_AISEARCH_NAME" "$safeEnvName-search"
 azd env set "AZURE_CURRENT_USER_OBJECT_ID" $currentUserObjectId
-
-
+azd env set "AZURE_CONTAINER_REGISTRY_NAME" "$($safeEnvName)containerregistry"
 
 azd env get-values
 

@@ -1,63 +1,70 @@
 name: speechanalytics
 metadata:
-  template: speechanalytics
+  template: azd-init@1.14.0
 
 services:
+
   askinsights:
-    project: ./AskInsightsService
+    project: AskInsightsService
     language: dotnet
     host: containerapp
     docker:
-      context: .
-      path: ./AskInsightsService/Dockerfile
-    hooks:
-      deploy:
-        - shell: pwsh
-          run: >-
-            az containerapp update
-            --name ${APP_BASE_NAME}-ask
-            --resource-group ${AZURE_RESOURCE_GROUP}
-            --image ${AZD_SERVICE_ASKINSIGHTS_IMAGE}
+      context: ..
+      dockerfile: AskInsightsService/Dockerfile
+
+    # hooks:
+    #   deploy:
+    #     - shell: pwsh
+    #       run: >-
+    #         az containerapp update
+    #         --name ${APP_BASE_NAME}-ask
+    #         --resource-group ${AZURE_RESOURCE_GROUP}
+    #         --image ${AZD_SERVICE_ASKINSIGHTS_IMAGE}
 
   transcription:
-    project: ./TranscriptionService
+    project: TranscriptionService
     language: dotnet
     host: containerapp
     docker:
-      context: .
-      path: ./TranscriptionService/Dockerfile
-    hooks:
-      deploy:
-        - shell: pwsh
-          run: |
-            az containerapp update --name ${APP_BASE_NAME}-transcription --resource-group ${AZURE_RESOURCE_GROUP} --image ${AZD_SERVICE_TRANSCRIPTION_IMAGE}
+      context: ..
+      dockerfile: TranscriptionService/Dockerfile
+    # hooks:
+    #   deploy:
+    #     - shell: pwsh
+    #       run: |
+    #         az containerapp update --name ${APP_BASE_NAME}-transcription --resource-group ${AZURE_RESOURCE_GROUP} --image ${AZD_SERVICE_TRANSCRIPTION_IMAGE}
 
-            $storageId = az storage account show --name ${APP_BASE_NAME}storage --resource-group ${AZURE_RESOURCE_GROUP} --query id -o tsv
-            $fqdn = az containerapp show --name ${APP_BASE_NAME}-transcription --resource-group ${AZURE_RESOURCE_GROUP} --query properties.configuration.ingress.fqdn -o tsv
-            $endpoint = "https://$fqdn/events"
-            $subscription = "${APP_BASE_NAME}-transcription-eg"
+    #         $storageId = az storage account show --name ${APP_BASE_NAME}storage --resource-group ${AZURE_RESOURCE_GROUP} --query id -o tsv
+    #         $fqdn = az containerapp show --name ${APP_BASE_NAME}-transcription --resource-group ${AZURE_RESOURCE_GROUP} --query properties.configuration.ingress.fqdn -o tsv
+    #         $endpoint = "https://$fqdn/events"
+    #         $subscription = "${APP_BASE_NAME}-transcription-eg"
 
-            $existing = az eventgrid event-subscription show --name $subscription --source-resource-id $storageId --query name -o tsv 2>$null
-            if ([string]::IsNullOrEmpty($existing)) {
-              az eventgrid event-subscription create `
-                --name $subscription `
-                --source-resource-id $storageId `
-                --endpoint $endpoint `
-                --event-delivery-schema EventGridSchema `
-                --subject-begins-with "/blobServices/default/containers/audio/" `
-                --included-event-types Microsoft.Storage.BlobCreated `
-                --max-events-per-batch 1 `
-                --preferred-batch-size-in-kilobytes 64 | Out-Null
-            }
-            else {
-              az eventgrid event-subscription update `
-                --name $subscription `
-                --source-resource-id $storageId `
-                --endpoint $endpoint `
-                --subject-begins-with "/blobServices/default/containers/audio/" | Out-Null
-            }
+    #         $existing = az eventgrid event-subscription show --name $subscription --source-resource-id $storageId --query name -o tsv 2>$null
+    #         if ([string]::IsNullOrEmpty($existing)) {
+    #           az eventgrid event-subscription create `
+    #             --name $subscription `
+    #             --source-resource-id $storageId `
+    #             --endpoint $endpoint `
+    #             --event-delivery-schema EventGridSchema `
+    #             --subject-begins-with "/blobServices/default/containers/audio/" `
+    #             --included-event-types Microsoft.Storage.BlobCreated `
+    #             --max-events-per-batch 1 `
+    #             --preferred-batch-size-in-kilobytes 64 | Out-Null
+    #         }
+    #         else {
+    #           az eventgrid event-subscription update `
+    #             --name $subscription `
+    #             --source-resource-id $storageId `
+    #             --endpoint $endpoint `
+    #             --subject-begins-with "/blobServices/default/containers/audio/" | Out-Null
+    #         }
 
 infra:
   provider: bicep
   path: ./infra
   module: main
+
+hooks:
+  preup: 
+    - shell: pwsh
+      run: ./scripts/preup.ps1

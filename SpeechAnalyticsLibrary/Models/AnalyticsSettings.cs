@@ -34,9 +34,7 @@
    public class AzureOpenAi
    {
       public string EndPoint { get; set; }
-      public string ChatModel { get; set; }
       public string ChatDeploymentName { get; set; }
-      public string EmbeddingModel { get; set; }
       public string EmbeddingDeploymentName { get; set; }
    }
 
