@@ -8,9 +8,14 @@ services:
     project: AskInsightsService
     language: dotnet
     host: containerapp
+    hooks:
+      prebuild:
+        shell: pwsh
+        run: ../scripts/prebuild-set-tag.ps1 -ServiceName askinsights -ServicePath AskInsightsService -EnvName ${AZURE_ENV_NAME} -Location ${AZURE_LOCATION}
     docker:
       context: ..
       dockerfile: AskInsightsService/Dockerfile
+      image: ${AZD_SERVICE_ASKINSIGHTS_IMAGE}
 
     # hooks:
     #   deploy:
@@ -25,9 +30,15 @@ services:
     project: TranscriptionService
     language: dotnet
     host: containerapp
+    hooks:
+        prebuild:
+          shell: pwsh
+          run: ../scripts/prebuild-set-tag.ps1 -ServiceName transcription -ServicePath TranscriptionService -EnvName ${AZURE_ENV_NAME} -Location ${AZURE_LOCATION}
     docker:
       context: ..
       dockerfile: TranscriptionService/Dockerfile
+      image: ${AZD_SERVICE_TRANSCRIPTION_IMAGE}
+      
     # hooks:
     #   deploy:
     #     - shell: pwsh
@@ -68,3 +79,13 @@ hooks:
   preup: 
     - shell: pwsh
       run: ./scripts/preup.ps1
+  # preprovision:
+  #   - shell: pwsh
+  #     run: ./scripts/preprovision.ps1
+  # prepackage:
+  #   - shell: pwsh
+  #     run: ./scripts/prepackage.ps1      
+
+  postdeploy:
+    - shell: pwsh
+      run: ./scripts/postdeploy.ps1

@@ -7,8 +7,10 @@ using SpeechAnalyticsLibrary.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 builder.Configuration
-    .AddJsonFile("appsettings.json", optional: true)
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+    .AddJsonFile("local.settings.json", optional: true, reloadOnChange: false)
     .AddEnvironmentVariables();
 
 builder.Services.AddSingleton<AnalyticsSettings>(sp =>

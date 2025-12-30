@@ -8,6 +8,14 @@
    <ItemGroup>
       <EmbeddedResource Include="Prompts\**\*.txt" />
    </ItemGroup>
+   <ItemGroup>
+     <Compile Remove="Models\SpeechToText\dto\**" />
+     <EmbeddedResource Remove="Models\SpeechToText\dto\**" />
+     <None Remove="Models\SpeechToText\dto\**" />
+   </ItemGroup>
+   <ItemGroup>
+     <Compile Remove="Models\SpeechToText\API.cs" />
+   </ItemGroup>
 
    <ItemGroup>
       <PackageReference Include="Azure.AI.VoiceLive" Version="1.0.0" />
@@ -23,6 +31,9 @@
       <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.1" />
       <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.1" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	   <PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.251219.1" />
+	   <PackageReference Include="Microsoft.Extensions.AI" Version="10.1.1" />
+	   <PackageReference Include="Microsoft.Agents.AI.AzureAI" Version="1.0.0-preview.251219.1" />
    </ItemGroup>
 
 </Project>

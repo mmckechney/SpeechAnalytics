@@ -13,87 +13,113 @@ param containerRegistryName string
 param userIdGuid string
 param chatDeploymentName string
 param embeddingDeploymentName string
+
 param askContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 param transcriptionContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
+param firstProvision bool = true
+param voiceDiarizeModel string
+
 
 var containerEnvironmentName = '${containerAppName}-env'
+var appInsightsName = '${containerAppName}-insights'
 var logAnalyticsWorkspaceName = '${containerAppName}-log'
 var askContainerAppName = '${containerAppName}-ask'
 var transcriptionContainerAppName = '${containerAppName}-transcription'
 var aiFoundryResourceName = '${foundryProjectName}-resource'
-
+var managedIdentityName = '${containerAppName}-mi'
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
     name: resourceGroupName
     location: location
 }
 
+module managedIdentity 'managed-identity.bicep' = {
+	name: 'managedIdentity'
+	scope: rg
+	params: {
+		name: managedIdentityName
+		location: location
+	}
+}
+
+module permissionsacr 'permissions-acr.bicep' = {
+    scope: rg
+    name: 'permissionsacr'
+    params: {
+        managedIdentityPrincipalId: managedIdentity.outputs.principalId
+        userPrincipalId:userIdGuid
+    }
+}
+
 module storage 'storage.bicep' = {
     name: 'storage'
-    scope: resourceGroup(resourceGroupName)
+    scope: rg
     params: {
         location: location
         storageAccountName:storageAccountName
-      
+        logAnalyticsWorkspaceResourceId: appInsights.outputs.logAnalyticsResourceId
     }
-    dependsOn: [
-        rg
-    ]
+  
 }
 
 module aiFoundry 'aifoundryresource.bicep' = {
-    scope: resourceGroup(resourceGroupName)
+    scope: rg
     name: 'aifoundry'
     params: {
         location: location
         aiFoundryName: foundryProjectName
         aiFoundryResourceName: aiFoundryResourceName
+        voiceDiarizeModel: voiceDiarizeModel
+        chatModel: chatDeploymentName
+        embeddingModel: embeddingDeploymentName
+        managedIdentityResourceId: managedIdentity.outputs.id
+        logAnalyticsName: appInsights.outputs.logAnalyticsWorkspaceName
+
     }
-    dependsOn: [
-        rg
-    ]
+ }
+
+module appInsights 'appinsights.bicep' = {
+     scope: rg
+     params: {
+        appInsightsName: appInsightsName
+        logAnalyticsName : logAnalyticsWorkspaceName
+     }
+   
 }
 module aiSearch 'aisearch.bicep' = {
-    scope: resourceGroup(resourceGroupName)
+    scope: rg
     name: 'aisearch'
     params: {
         location: location
         aiSearchName:aiSearchName
-        
+        logAnalyticsWorkspaceResourceId: appInsights.outputs.logAnalyticsResourceId
     }
-    dependsOn: [
-        rg
-    ]
 }
 
 
 module cosmosDB 'cosmos.bicep' = {
-    scope: resourceGroup(resourceGroupName)
+    scope: rg
     name: 'cosmos'
     params: {
         location: location
         cosmosAccountName: cosmosAccountName
         cosmosContainerName: 'analyticscontainer'
         cosmosDataBaseName: 'speechanalyticsdb'
+        logAnalyticsWorkspaceResourceId: appInsights.outputs.logAnalyticsResourceId
     }
-    dependsOn: [
-        rg
-    ]
 }
 
 module containerRegistry 'containerregistry.bicep' = {
-    scope: resourceGroup(resourceGroupName)
+    scope: rg
     name: 'containerregistry'
     params: {
         location: location
         registryName: containerRegistryName
+        logAnalyticsWorkspaceResourceId: appInsights.outputs.logAnalyticsResourceId
     }
-    dependsOn: [
-        rg
-    ]
 }
 module containerApps 'containerapps.bicep' = {
-    scope: resourceGroup(resourceGroupName)
+    scope: rg
     name: 'containerapps'
     params: {
         location: location
@@ -104,36 +130,48 @@ module containerApps 'containerapps.bicep' = {
         containerRegistryServer: containerRegistry.outputs.loginServer
         askImage: askContainerImage
         transcriptionImage: transcriptionContainerImage
-        aiSpeechServicesEndpoint: aiFoundry.outputs.aiSpeechToTextStandardEndpoint
         aiSearchEndpoint: aiSearch.outputs.aiSearchEndpoint
         storageSourceContainerUrl: storage.outputs.audioContainerUri
         storageTargetContainerUrl: storage.outputs.transcriptionContainerUri
         cosmosAccountEndpoint: cosmosDB.outputs.cosmosAccountEndpoint
         cosmosDatabaseName: cosmosDB.outputs.cosmosDataBaseName
         cosmosContainerName: cosmosDB.outputs.cosmosContainerName
-        openAiEndpoint: aiFoundry.outputs.aiFoundryProjectEndpoint
-        chatDeploymentName: chatDeploymentName
-        embeddingDeploymentName: embeddingDeploymentName
+        appInsightsConnectionString : appInsights.outputs.connectionString
+        usePlaceholderImage : firstProvision
+        managedIdentityResourceId: managedIdentity.outputs.id
+        foundryProjectEndpoint: aiFoundry.outputs.aiFoundryProjectEndpoint
+        chatModelDeploymentName: chatDeploymentName
+        embeddingModeDeploymentName: embeddingDeploymentName
+        mangedIdentityClientId: managedIdentity.outputs.clientId
+        foundryResourceId: aiFoundry.outputs.foundryResourceId
+        foundryResourceName: aiFoundry.outputs.foundryResourceName
+    }
+    dependsOn: [
+        permissionsacr
+    ]
+}
+
+module storageEvents 'eventgrid.bicep' = {
+    scope: rg
+    name: 'storageEvents'
+    params: {
+        location: location
+        storageAccountName: storageAccountName
+        audioContainerName: storage.outputs.audioContainerName
+        transcriptionEndpoint: containerApps.outputs.transcriptionFqdn
     }
 }
 
 module permissions 'permissions.bicep' = {
-    scope: resourceGroup(resourceGroupName)
+    scope: rg
     name: 'permissions'
     params: {
-        aiFoundryResourceName: aiFoundryResourceName   
-        aiFoundryPrincipal: aiFoundry.outputs.aiFoundryPrincipalId
-        blobContainerName: storage.outputs.audiofile_container
-        storageAccountName: storageAccountName
-        aiSearchName: aiSearchName
+        aiFoundryProjectPrincipalId: aiFoundry.outputs.aiFoundryProjectPrincipalId
+        aiFoundryResourcePrincipalId: aiFoundry.outputs.aiFoundryResourcePrincipalId
         cosmosAccountName: cosmosDB.outputs.cosmosAccountName
-        askPrincipalId: containerApps.outputs.askPrincipalId
-        transcriptionPrincipalId: containerApps.outputs.transcriptionPrincipalId
         userPrincipalId: userIdGuid
+        managedIdentityPrincipalId: managedIdentity.outputs.principalId
     }
-    dependsOn: [
-        rg
-    ]
 }
 
 output aiServicesEndpoint string = aiFoundry.outputs.aiSpeechToTextEndpoint
@@ -154,4 +192,14 @@ output transcriptionContainerUri string = storage.outputs.transcriptionContainer
 output aiSearchEndpoint string = aiSearch.outputs.aiSearchEndpoint
 output askContainerFqdn string = containerApps.outputs.askFqdn
 output transcriptionContainerFqdn string = containerApps.outputs.transcriptionFqdn
-
+output foundryProjectEndpoint string = aiFoundry.outputs.aiFoundryProjectEndpoint
+output chatModel string = aiFoundry.outputs.chatModelName
+output embeddingModel string = aiFoundry.outputs.embeddingModelName
+output voiceDiarizeModel string = aiFoundry.outputs.voiceDiarizeModel
+output speechToTextEndpoint string = aiFoundry.outputs.aiSpeechToTextStandardEndpoint
+output insightsAgentName string = containerApps.outputs.insightsAgentNameOutput
+output speakerAgentName string = containerApps.outputs.speakerAgentNameOutput 
+output queryAgentName string = containerApps.outputs.queryAgentNameOutput
+output answerAgentName string = containerApps.outputs.answerAgentNameOutput
+output foundryResourceId string = aiFoundry.outputs.foundryResourceId
+output foundryResourceName string = aiFoundryResourceName

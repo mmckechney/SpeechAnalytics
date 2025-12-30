@@ -38,6 +38,12 @@ namespace SpeechAnalyticsLibrary.Models.SpeechToText
 
       [JsonPropertyName("supportedOutputFormats")]
       public List<string> SupportedOutputFormats { get; set; }
+
+      [JsonPropertyName("supportsTranscriptionsSubmit")]
+      public bool SupportsTranscriptionsSubmit { get; set; }
+
+      [JsonPropertyName("supportsTranscriptionsTranscribe")]
+      public bool SupportsTranscriptionsTranscribe { get; set; }
    }
 
    public class Links

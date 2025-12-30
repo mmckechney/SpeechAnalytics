@@ -1,5 +1,6 @@
 param registryName string
 param location string = resourceGroup().location
+param logAnalyticsWorkspaceResourceId string
 @allowed([
   'Basic'
   'Standard'
@@ -20,6 +21,43 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' =
         status: 'disabled'
       }
     }
+  }
+}
+
+resource containerRegistryDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'acr-logs'
+  scope: containerRegistry
+  properties: {
+    workspaceId: logAnalyticsWorkspaceResourceId
+    logs: [
+      {
+        category: 'ContainerRegistryRepositoryEvents'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+      {
+        category: 'ContainerRegistryLoginEvents'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+        timeGrain: 'PT1M'
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
   }
 }
 

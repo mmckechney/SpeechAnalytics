@@ -6,7 +6,10 @@
       "value": "gpt-5-mini"
     },
      "embeddingDeploymentName": {
-      "value": "text-embedding-ada-002"
+      "value": "text-embedding-3-large"
+    },
+    "voiceDiarizeModel": {
+      "value": "gpt-4o-transcribe-diarize"
     },
     "location": {
       "value": "${AZURE_LOCATION}"
@@ -49,6 +52,9 @@
     },
     "containerRegistryPassword": {
       "value": "${AZURE_CONTAINER_REGISTRY_PASSWORD}"
+    },
+    "firstProvision": {
+      "value": "${FIRST_PROVISION}"
     }
   }
 }

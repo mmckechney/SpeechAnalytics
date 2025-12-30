@@ -7,23 +7,32 @@ param containerRegistryServer string = ''
 @secure()
 param askImage string
 param transcriptionImage string
-param aiSpeechServicesEndpoint string
+param foundryResourceId string
+param foundryResourceName string
 param aiSearchEndpoint string
 param storageSourceContainerUrl string
 param storageTargetContainerUrl string
 param cosmosAccountEndpoint string
 param cosmosDatabaseName string
 param cosmosContainerName string
-param openAiEndpoint string
-param chatDeploymentName string
-param embeddingDeploymentName string
+param managedIdentityResourceId string
+param mangedIdentityClientId string
+@secure()
+param appInsightsConnectionString string
+@description('Use placeholder image for initial deployment before images are pushed to ACR')
+param usePlaceholderImage bool = false 
+param foundryProjectEndpoint string
+param chatModelDeploymentName string
+param embeddingModeDeploymentName string
 
-resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
+var insightsAgentName = 'speechanalytics-insights'
+var speakerAgentName = 'speechanalytics-speaker-id'
+var queryAgentName = 'speechanalytics-cosmos-query'
+var answerAgentName = 'speechanalytics-qna'
+
+resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' existing = {
   name: logAnalyticsName
-  location: location
-  properties: {
-    retentionInDays: 30
-  }
+
 }
 
 var logAnalyticsSharedKeys = listKeys(logAnalytics.id, '2020-08-01')
@@ -42,23 +51,88 @@ resource managedEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
   }
 }
 
+resource managedEnvDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'managedenv-logs'
+  scope: managedEnv
+  properties: {
+    workspaceId: logAnalytics.id
+    logs: [
+      {
+        category: 'ContainerAppConsoleLogs'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+      {
+        category: 'ContainerAppSystemLogs'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+        timeGrain: 'PT1M'
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
+  }
+}
+
 
 var commonEnvs = [
   {
-    name: 'AzureOpenAi__EndPoint'
-    value: openAiEndpoint
+    name: 'AZURE_CLIENT_ID'
+    value: mangedIdentityClientId
   }
   {
-    name: 'AzureOpenAi__ChatDeploymentName'
-    value: chatDeploymentName
+    name: 'FoundryAgent__ProjectEndpoint'
+    value: foundryProjectEndpoint
+  }
+    {
+    name: 'FoundryAgent__ModelDeploymentName'
+    value: chatModelDeploymentName
   }
   {
-    name: 'AzureOpenAi__EmbeddingDeploymentName'
-    value: embeddingDeploymentName
+    name: 'FoundryAgent__EmbeddingDeploymentName'
+    value: embeddingModeDeploymentName
   }
   {
-    name: 'AiServices__Endpoint'
-    value: aiSpeechServicesEndpoint
+    name: 'FoundryAgent__InsightsAgentName'
+    value: insightsAgentName
+  }
+  {
+    name: 'FoundryAgent__SpeakerAgentName'
+    value: speakerAgentName
+  }
+  {
+    name: 'FoundryAgent__QueryAgentName'
+    value: queryAgentName
+  }
+  {
+    name: 'FoundryAgent__AnswerAgentName'
+    value: answerAgentName
+  }
+  {
+    name: 'FoundryAgent__ResourceId'
+    value: foundryResourceId
+  }
+  {
+    name: 'FoundryAgent__ResourceName'
+    value: foundryResourceName
+  }
+  {
+    name: 'FoundryAgent__Region'
+    value: location
   }
   {
     name: 'AiSearch__Endpoint'
@@ -88,13 +162,25 @@ var commonEnvs = [
     name: 'CosmosDb__TenantId'
     value: tenant().tenantId
   }
+  {
+    name: 'APPINSIGHTS_CONNECTIONSTRING'
+    value: appInsightsConnectionString
+  }
+  
 ]
 
 resource askInsightsApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: askAppName
   location: location
+   tags: {
+    'azd-service-name': 'askinsights'
+    'workload-role': 'askinsights'
+  }
   identity: {
-    type: 'SystemAssigned'
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${managedIdentityResourceId}': {}
+    }
   }
   properties: {
     managedEnvironmentId: managedEnv.id
@@ -107,7 +193,7 @@ resource askInsightsApp 'Microsoft.App/containerApps@2024-03-01' = {
       registries: [
         {
           server: containerRegistryServer
-          identity: 'system'
+          identity: managedIdentityResourceId
         }
       ]
     }
@@ -115,7 +201,7 @@ resource askInsightsApp 'Microsoft.App/containerApps@2024-03-01' = {
       containers: [
         {
           name: 'askinsights'
-          image: askImage
+          image: usePlaceholderImage ? 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest' : '${containerRegistryServer}/${askImage}'
           env: commonEnvs
         }
       ]
@@ -127,11 +213,37 @@ resource askInsightsApp 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
+resource askInsightsDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'askinsights-metrics'
+  scope: askInsightsApp
+  properties: {
+    workspaceId: logAnalytics.id
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+        timeGrain: 'PT1M'
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
+  }
+}
+
 resource transcriptionApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: transcriptionAppName
   location: location
-  identity: {
-    type: 'SystemAssigned'
+  tags: {
+    'azd-service-name': 'transcription'
+    'workload-role': 'transcription'
+  }
+   identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${managedIdentityResourceId}': {}
+    }
   }
   properties: {
     managedEnvironmentId: managedEnv.id
@@ -144,16 +256,16 @@ resource transcriptionApp 'Microsoft.App/containerApps@2024-03-01' = {
       registries:  [
         {
           server: containerRegistryServer
-          identity: 'system'
+          identity: managedIdentityResourceId
         }
       ]
     }
     template: {
       containers: [
         {
-          name: 'transcription'
-          image: transcriptionImage
-          env: commonEnvs
+          name: 'transcription' 
+          image: usePlaceholderImage ? 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest' : '${containerRegistryServer}/${transcriptionImage}'
+           env: commonEnvs
         }
       ]
       scale: {
@@ -164,7 +276,31 @@ resource transcriptionApp 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
-output askPrincipalId string = askInsightsApp.identity.principalId
-output transcriptionPrincipalId string = transcriptionApp.identity.principalId
+resource transcriptionDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'transcription-metrics'
+  scope: transcriptionApp
+  properties: {
+    workspaceId: logAnalytics.id
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+        timeGrain: 'PT1M'
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
+  }
+}
+
+// output askPrincipalId string = askInsightsApp.identity.principalId
+// output transcriptionPrincipalId string = transcriptionApp.identity.principalId
 output transcriptionFqdn string = transcriptionApp.properties.configuration.ingress.fqdn
 output askFqdn string = askInsightsApp.properties.configuration.ingress.fqdn
+
+output insightsAgentNameOutput string = insightsAgentName
+output speakerAgentNameOutput string = speakerAgentName 
+output queryAgentNameOutput string = queryAgentName
+output answerAgentNameOutput string = answerAgentName

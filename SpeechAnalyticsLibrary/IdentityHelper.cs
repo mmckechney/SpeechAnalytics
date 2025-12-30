@@ -2,14 +2,16 @@
 using Azure.Identity;
 using Microsoft.Extensions.Logging;
 using SpeechAnalyticsLibrary;
+using SpeechAnalyticsLibrary.Models;
 
 namespace SpeechAnalyticsLibrary
 {
    public class IdentityHelper
    {
-      public IdentityHelper(ILogger<IdentityHelper> log)
+      public IdentityHelper(ILogger<IdentityHelper> log, AnalyticsSettings settings)
       {
          this.log = log;
+            this.TenantId = settings.CosmosDB.TenantId;
       }
       private CancellationTokenSource src = new CancellationTokenSource();
       private ILogger log;
@@ -32,7 +34,8 @@ namespace SpeechAnalyticsLibrary
       private string _tenantId = string.Empty;
       public string TenantId
       {
-         get => _tenantId; set
+         get => _tenantId; 
+         set
          {
             _tenantId = value;
             if (!string.IsNullOrEmpty(_tenantId))

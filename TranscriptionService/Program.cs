@@ -135,9 +135,7 @@ internal class TranscriptionProcessor
         var name = Path.GetFileName(blobUri.LocalPath.Trim('/'));
         var blobClient = containerClient.GetBlobClient(name);
 
-        var aiSvcs = _settings.AiServices;
-
-        var initialResponse = await _batchTranscription.StartBatchTranscription(aiSvcs.Endpoint, _settings.Storage.SourceContainerUrl, _settings.Storage.TargetContainerUrl, blobClient.Uri);
+        var initialResponse = await _batchTranscription.StartBatchTranscription(_settings.FoundryAgent.ResourceName, _settings.Storage.SourceContainerUrl, _settings.Storage.TargetContainerUrl, blobClient.Uri);
 
         if (initialResponse == null)
         {

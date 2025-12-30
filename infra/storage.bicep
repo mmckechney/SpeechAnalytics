@@ -1,5 +1,6 @@
 ﻿param storageAccountName string 
 param location string = resourceGroup().location
+param logAnalyticsWorkspaceResourceId string
 
 resource storageAccount  'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: storageAccountName
@@ -93,6 +94,51 @@ resource storageContainer_transcription 'Microsoft.Storage/storageAccounts/blobS
   }
  
 }
+
+  resource storageDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+    name: 'storage-blob-logs'
+    scope: storageAccount_blobService
+    properties: {
+      workspaceId: logAnalyticsWorkspaceResourceId
+      logs: [
+        {
+          category: 'StorageRead'
+          enabled: true
+          retentionPolicy: {
+            enabled: false
+            days: 0
+          }
+        }
+        {
+          category: 'StorageWrite'
+          enabled: true
+          retentionPolicy: {
+            enabled: false
+            days: 0
+          }
+        }
+        {
+          category: 'StorageDelete'
+          enabled: true
+          retentionPolicy: {
+            enabled: false
+            days: 0
+          }
+        }
+      ]
+      metrics: [
+        {
+          category: 'Transaction'
+          enabled: true
+          timeGrain: 'PT1M'
+          retentionPolicy: {
+            enabled: false
+            days: 0
+          }
+        }
+      ]
+    }
+  }
 output audiofile_container string = storageContainer_audio.name
 output blobServiceUri string = 'https://${storageAccountName}.blob.${environment().suffixes.storage}'
 output queueServiceUri string = 'https://${storageAccountName}.queue.${environment().suffixes.storage}'

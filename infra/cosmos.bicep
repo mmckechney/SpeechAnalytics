@@ -2,6 +2,7 @@
 param cosmosDataBaseName string
 param cosmosContainerName string
 param location string = resourceGroup().location
+param logAnalyticsWorkspaceResourceId string
 resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-11-15' = {
    name:cosmosAccountName
    location: location
@@ -79,6 +80,59 @@ resource cosmosContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/con
          }
       }
   }
+}
+
+resource cosmosDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+   name: 'cosmos-logs'
+   scope: cosmosAccount
+   properties: {
+      workspaceId: logAnalyticsWorkspaceResourceId
+      logs: [
+         {
+            category: 'DataPlaneRequests'
+            enabled: true
+            retentionPolicy: {
+               enabled: false
+               days: 0
+            }
+         }
+         {
+            category: 'ControlPlaneRequests'
+            enabled: true
+            retentionPolicy: {
+               enabled: false
+               days: 0
+            }
+         }
+         {
+            category: 'QueryRuntimeStatistics'
+            enabled: true
+            retentionPolicy: {
+               enabled: false
+               days: 0
+            }
+         }
+         {
+            category: 'PartitionKeyRUConsumption'
+            enabled: true
+            retentionPolicy: {
+               enabled: false
+               days: 0
+            }
+         }
+      ]
+      metrics: [
+         {
+            category: 'AllMetrics'
+            enabled: true
+            timeGrain: 'PT1M'
+            retentionPolicy: {
+               enabled: false
+               days: 0
+            }
+         }
+      ]
+   }
 }
 
 output cosmosAccountEndpoint string = cosmosAccount.properties.documentEndpoint
