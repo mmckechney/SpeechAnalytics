@@ -159,6 +159,7 @@ module storageEvents 'eventgrid.bicep' = {
         storageAccountName: storageAccountName
         audioContainerName: storage.outputs.audioContainerName
         transcriptionEndpoint: containerApps.outputs.transcriptionFqdn
+        firstProvision: firstProvision
     }
 }
 
@@ -190,8 +191,8 @@ output storageFileServiceUri string = storage.outputs.fileServiceUri
 output audioContainerUri string = storage.outputs.audioContainerUri
 output transcriptionContainerUri string = storage.outputs.transcriptionContainerUri
 output aiSearchEndpoint string = aiSearch.outputs.aiSearchEndpoint
-output askContainerFqdn string = containerApps.outputs.askFqdn
-output transcriptionContainerFqdn string = containerApps.outputs.transcriptionFqdn
+output askAppFqdn string = containerApps.outputs.askFqdn
+output transcriptionAppFqdn string = containerApps.outputs.transcriptionFqdn
 output foundryProjectEndpoint string = aiFoundry.outputs.aiFoundryProjectEndpoint
 output chatModel string = aiFoundry.outputs.chatModelName
 output embeddingModel string = aiFoundry.outputs.embeddingModelName
