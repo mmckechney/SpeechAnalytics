@@ -4,7 +4,6 @@ param aiFoundryResourceName string
 param location string= resourceGroup().location
 param chatModel string = 'gpt-5-mini'
 param embeddingModel string = 'text-embedding-3-large'
-param voiceDiarizeModel string = 'gpt-4o-transcribe-diarize '
 param managedIdentityResourceId string
 param logAnalyticsName string
 
@@ -168,7 +167,6 @@ output aiFoundryResourcePrincipalId string = aiFoundryResource.identity.principa
 output aiFoundryProjectPrincipalId string = foundryProject.identity.principalId
 output embeddingModelName string = embeddingModel
 output chatModelName string = chatModel
-output voiceDiarizeModel string = voiceDiarizeModel
 output aiFoundryProjectEndpoint string = foundryProject.properties.endpoints['AI Foundry API']
 output aiSpeechToTextStandardEndpoint string = aiFoundryResource.properties.endpoints['Speech Services Speech to Text (Standard)']
 output aiSpeechToTextEndpoint string = aiFoundryResource.properties.endpoints['Speech Services Speech to Text']

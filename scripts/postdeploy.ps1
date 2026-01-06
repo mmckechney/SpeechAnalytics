@@ -53,7 +53,6 @@ $localSettings = @{
 		ProjectEndpoint             = Get-EnvValue @('foundryProjectEndpoint', 'FOUNDRY_PROJECT_ENDPOINT')
 		ModelDeploymentName         = Get-EnvValue @('foundryModelDeploymentName', 'FOUNDRY_MODEL_DEPLOYMENT_NAME', 'chatModel', 'AZURE_OPENAI_CHAT_DEPLOYMENT_NAME')
 		EmbeddingDeploymentName     = Get-EnvValue @('foundryEmbeddingDeploymentName', 'FOUNDRY_EMBEDDING_DEPLOYMENT_NAME', 'embeddingModel', 'AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME')
-		#VoiceDiarizeModel           = Get-EnvValue @('foundryVoiceDiarizeModel', 'FOUNDRY_VOICE_DIARIZE_MODEL', 'voiceDiarizeModel')
 		InsightsAgentName           = Get-EnvValue @('foundryInsightsAgentName', 'insightsAgentName')
 		SpeakerAgentName            = Get-EnvValue @('foundrySpeakerAgentName', 'speakerAgentName')
 		QueryAgentName              = Get-EnvValue @('foundryQueryAgentName', 'queryAgentName')

@@ -18,8 +18,6 @@ param askContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-hell
 param transcriptionContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
 param firstProvision bool = true
-param voiceDiarizeModel string
-
 
 var containerEnvironmentName = '${containerAppName}-env'
 var appInsightsName = '${containerAppName}-insights'
@@ -69,7 +67,6 @@ module aiFoundry 'aifoundryresource.bicep' = {
         location: location
         aiFoundryName: foundryProjectName
         aiFoundryResourceName: aiFoundryResourceName
-        voiceDiarizeModel: voiceDiarizeModel
         chatModel: chatDeploymentName
         embeddingModel: embeddingDeploymentName
         managedIdentityResourceId: managedIdentity.outputs.id
@@ -196,7 +193,6 @@ output transcriptionAppFqdn string = containerApps.outputs.transcriptionFqdn
 output foundryProjectEndpoint string = aiFoundry.outputs.aiFoundryProjectEndpoint
 output chatModel string = aiFoundry.outputs.chatModelName
 output embeddingModel string = aiFoundry.outputs.embeddingModelName
-output voiceDiarizeModel string = aiFoundry.outputs.voiceDiarizeModel
 output speechToTextEndpoint string = aiFoundry.outputs.aiSpeechToTextStandardEndpoint
 output insightsAgentName string = containerApps.outputs.insightsAgentNameOutput
 output speakerAgentName string = containerApps.outputs.speakerAgentNameOutput 
