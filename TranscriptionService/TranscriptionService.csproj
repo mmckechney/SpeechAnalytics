@@ -6,7 +6,7 @@
     <UserSecretsId>d30a8cf3-8a62-493d-84d5-ed9f227ff116</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.Messaging.EventGrid" Version="4.21.0" />
+    <PackageReference Include="Azure.Messaging.EventGrid" Version="5.0.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
   </ItemGroup>
   <ItemGroup>
