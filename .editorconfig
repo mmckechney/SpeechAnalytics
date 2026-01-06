@@ -19,3 +19,6 @@ dotnet_diagnostic.SKEXP0020.severity = warning
 dotnet_diagnostic.SKEXP0010.severity = warning
 dotnet_diagnostic.SKEXP0050.severity = warning
 
+
+# CA2252: This API requires opting into preview features
+dotnet_diagnostic.CA2252.severity = suggestion
