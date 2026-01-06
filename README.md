@@ -4,6 +4,7 @@ This demo highlights the power of combining Microsoft [Microsoft Foundry](https:
 ![Architecture](images/Architecture.png)
 
 
+
 ### Deploying
 
 Deployment is automated using PowerShell, the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/) and the [Azure Developer CLI](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/). These can be easily installed on a Windows machine using `winget`:
@@ -39,6 +40,7 @@ If successful, this process will create:
 - Azure Application Insights resource automatically connected to the Microsoft Foundry project for telemetry and monitoring
 - Azure Container Registry
 - Azure Container App Environment with 2 container apps: `transcription` and `ask`
+- [Aspire Dashboard](https://aspire.dev/dashboard/overview/) with logs and telemetry configured 
 - User and system assigned managed identities with all appropriate RBAC assignments
 - Log Analytics and App Insights
 - Event Grid and subscription to the Upload event on the `audio` storage container

@@ -52,6 +52,9 @@
     },
     "firstProvision": {
       "value": "${FIRST_PROVISION}"
+    },
+    "enableAspireDashboard": {
+      "value": true
     }
   }
 }
