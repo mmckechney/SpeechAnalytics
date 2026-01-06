@@ -1,8 +1,0 @@
-﻿{
-   "IsEncrypted": false,
-   "Values": {
-      "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-      "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
-      "StorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=mimckeai;AccountKey=w6qBYYXiaZO4rBA7+Z/xZK/8AeOnQAAcjtqNoY2lErgr4NOgXbTWTqLh+ICE6LqBcoKFPqMKdXk++AStvj4+/A==;EndpointSuffix=core.windows.net"
-   }
-}

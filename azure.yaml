@@ -1,0 +1,48 @@
+name: speechanalytics
+metadata:
+  template: azd-init@1.14.0
+
+services:
+
+  askinsights:
+    project: AskInsightsService
+    language: dotnet
+    host: containerapp
+    hooks:
+      prebuild:
+        shell: pwsh
+        run: ../scripts/prebuild-set-tag.ps1 -ServiceName askinsights -ServicePath AskInsightsService -EnvName ${AZURE_ENV_NAME} -Location ${AZURE_LOCATION}
+    docker:
+      context: ..
+      dockerfile: AskInsightsService/Dockerfile
+      image: ${AZD_SERVICE_ASKINSIGHTS_IMAGE}
+
+  transcription:
+    project: TranscriptionService
+    language: dotnet
+    host: containerapp
+    hooks:
+        prebuild:
+          shell: pwsh
+          run: ../scripts/prebuild-set-tag.ps1 -ServiceName transcription -ServicePath TranscriptionService -EnvName ${AZURE_ENV_NAME} -Location ${AZURE_LOCATION}
+    docker:
+      context: ..
+      dockerfile: TranscriptionService/Dockerfile
+      image: ${AZD_SERVICE_TRANSCRIPTION_IMAGE}
+      
+   
+infra:
+  provider: bicep
+  path: ./infra
+  module: main
+
+hooks:
+  preup: 
+    - shell: pwsh
+      run: ./scripts/preup.ps1
+
+  postdeploy:
+    - shell: pwsh
+      run: ./scripts/post-deploy-eventsub.ps1
+    - shell: pwsh
+      run: ./scripts/postdeploy.ps1

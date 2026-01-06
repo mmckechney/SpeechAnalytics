@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>77835bdf-91b5-4c2a-bd65-8acd583d549c</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SpeechAnalyticsLibrary\SpeechAnalyticsLibrary.csproj" />
+  </ItemGroup>
+</Project>

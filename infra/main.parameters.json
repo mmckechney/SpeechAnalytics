@@ -1,0 +1,57 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+     "chatDeploymentName": {
+      "value": "gpt-5-mini"
+    },
+     "embeddingDeploymentName": {
+      "value": "text-embedding-3-large"
+    },
+    "location": {
+      "value": "${AZURE_LOCATION}"
+    },
+    "resourceGroupName": {
+      "value": "${AZURE_RESOURCE_GROUP}"
+    },
+    "containerRegistryName": {
+      "value": "${AZURE_CONTAINER_REGISTRY_NAME}"
+    },
+    "storageAccountName": {
+      "value": "${AZURE_STORAGE_ACCOUNT}"
+    },
+    "foundryProjectName": {
+      "value": "${AZURE_AIFOUNDRY}"
+    },
+    "containerAppName": {
+      "value": "${AZURE_CONTAINER_APP_NAME}"
+    },
+    "cosmosAccountName": {
+      "value": "${AZURE_COSMOS_ACCOUNT_NAME}"
+    },
+    "aiSearchName": {
+      "value": "${AZURE_AISEARCH_NAME}"
+    },
+    "userIdGuid": {
+      "value": "${AZURE_CURRENT_USER_OBJECT_ID}"
+    },
+    "askContainerImage": {
+      "value": "${AZD_SERVICE_ASKINSIGHTS_IMAGE}"
+    },
+    "transcriptionContainerImage": {
+      "value": "${AZD_SERVICE_TRANSCRIPTION_IMAGE}"
+    },
+    "containerRegistryServer": {
+      "value": "${AZURE_CONTAINER_REGISTRY_ENDPOINT}"
+    },
+    "containerRegistryUsername": {
+      "value": "${AZURE_CONTAINER_REGISTRY_USERNAME}"
+    },
+    "containerRegistryPassword": {
+      "value": "${AZURE_CONTAINER_REGISTRY_PASSWORD}"
+    },
+    "firstProvision": {
+      "value": "${FIRST_PROVISION}"
+    }
+  }
+}

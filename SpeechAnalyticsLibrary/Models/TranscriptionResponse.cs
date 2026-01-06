@@ -1,6 +1,7 @@
 ﻿namespace SpeechAnalyticsLibrary.Models
 {
-   using SpeechAnalyticsLibrary.Models.SpeechToText.API;
+  // using SpeechAnalyticsLibrary.Models.SpeechToText.API;
+   using BatchClient;
    using System.Collections.Generic;
    using System.Text.Json.Serialization;
 

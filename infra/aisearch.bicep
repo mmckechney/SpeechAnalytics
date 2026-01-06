@@ -1,6 +1,6 @@
 param aiSearchName string
-param keyVaultName string
 param location string = resourceGroup().location
+param logAnalyticsWorkspaceResourceId string
 
 
 
@@ -12,27 +12,33 @@ resource cognitiveSearchInstance 'Microsoft.Search/searchServices@2023-11-01' = 
   }
 }
 
-resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
-  name: keyVaultName
-}
-
-var aiSearchAdminKeySecretName = 'AiSearchAdminKey'
-resource adminKey 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
-  parent: keyVault
-  name: aiSearchAdminKeySecretName
+resource aiSearchDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'aisearch-logs'
+  scope: cognitiveSearchInstance
   properties: {
-    value:  cognitiveSearchInstance.listAdminKeys().primaryKey
+    workspaceId: logAnalyticsWorkspaceResourceId
+    logs: [
+      {
+        category: 'OperationLogs'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+        timeGrain: 'PT1M'
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
   }
 }
 
-var aiSearchEndpointSecretName = 'AiSearchEndpoint'
-resource endPoint 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
-  parent: keyVault
-  name: aiSearchEndpointSecretName
-  properties: {
-    value: 'https://${aiSearchName}.search.windows.net'
-  }
-}
-
-output aiSearchEndpointSecretName string = aiSearchEndpointSecretName
-output aiSearchAdminKeySecretName string = aiSearchAdminKeySecretName
+output aiSearchEndpoint string = 'https://${aiSearchName}.search.windows.net'
