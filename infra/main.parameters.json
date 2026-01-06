@@ -8,9 +8,6 @@
      "embeddingDeploymentName": {
       "value": "text-embedding-3-large"
     },
-    "voiceDiarizeModel": {
-      "value": "gpt-4o-transcribe-diarize"
-    },
     "location": {
       "value": "${AZURE_LOCATION}"
     },

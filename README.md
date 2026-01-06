@@ -1,23 +1,58 @@
 # Speech Analytics Demo
-This demo highlights the power of combining Microsoft [AI Services Speech to Text](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/) and [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service) to transcribe and analyze the content of a call center conversation.
+This demo highlights the power of combining Microsoft [Microsoft Foundry](https://learn.microsoft.com/en-us/azure/ai-foundry/what-is-foundry?view=foundry) with [Azure Speech to Text](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/),  [Microsoft Foundry Agents](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/overview?view=foundry) and the [Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/overview/agent-framework-overview) to transcribe and analyze the content of a call center conversation.
 
 ![Architecture](images/Architecture.png)
 
-## Get Started
 
-To simplify the deployment of the demo, we have created Azure Bicep templates and a PowerShell script to deploy the required resources to your Azure subscription. Because Azure Open AI resources are not yet available in all regions, you will need to [deploy that on your own](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal) and provide the endpoint and key to the deployment script.
+### Deploying
 
-Then, simply login to the Azure CLI and run the deployment script:
+Deployment is automated using PowerShell, the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/) and the [Azure Developer CLI](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/). These can be easily installed on a Windows machine using `winget`:
 
-``` PowerShell
-az login
-.\deploy.ps1 -resourceGroup "<rg name>"-location "<azure region>" -aiServicesAcctName "<ai svc name>" -storageAcctName "<storage acct>" -azureOpenAiEndpoint "<exising AOAI endpoint>" -azureOpenAiKey "<existing AOAI key>" -functionAppName "<function app name>" -cosmosAccountName "<cosmos acct name>" -keyVaultName "<key vault name>" -aiSearchName "<azure search name>"
-
+``` bash
+winget install --id "Microsoft.AzureCLI" --silent --accept-package-agreements --accept-source-agreements
+winget install --id "Microsoft.Azd" --silent --accept-package-agreements --accept-source-agreements
 ```
 
+**NOTE:** Since you will be deploying a new Microsoft Foundry instance instance, be aware there are location limitations base on Azure OpenAI model you may pick (see the [/infra/main.parameters.json's](/infra/main.parameters.json) `chatDeploymentName` value to change your target model). Please set your location value accordingly: 
+[Region Availability](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models?tabs=global-standard%2Cstandard-chat-completions#model-summary-table-and-region-availability)
+
+Also, depending on your available Azure OpenAI model quota, you may get a capacity related deployment error. If you do, you will need to modify the `capacity` value for the appropriate model found in the [`infra/aifoundryresource.bicep`](infra/aifoundryresource.bicep) file
 
 
-## How to use the demo console app
+``` powershell
+# Login to the Azure Developer CLI
+azd auth login  
+#if you have access to multiple tenants, you may want to specify the tenant id
+azd auth login --tenant-id "<tenant guid>"
+
+# provision the resources
+azd up
+
+#follow the prompts for the parameter values...
+```
+If successful, this process will create:
+
+- Storage account with two blob containers (`audio` for uploaded audio files and `transcription` for processed output)
+- A Microsoft Foundry resource and project, with a `gpt-5-mini` and `text_embedding_3_large` deployments and a system assigned managed identiy
+- Azure AI Search Service account
+- Azure Cosmos DB account with container and database created
+- Azure Application Insights resource automatically connected to the Microsoft Foundry project for telemetry and monitoring
+- Azure Container Registry
+- Azure Container App Environment with 2 container apps: `transcription` and `ask`
+- User and system assigned managed identities with all appropriate RBAC assignments
+- Log Analytics and App Insights
+- Event Grid and subscription to the Upload event on the `audio` storage container
+
+
+
+## Using the Container apps
+
+To activate a transcription, simply upload an audio file to the `audio` blob container. The Event Grid subsciption will kick in and the `transcription` app will process the transcription.
+To as questions about the transcription, you can make an HTTP get to the URL of the `ask` app using the `ask` route with a question query string `ask?question=ask your question here`. Be sure to mention the file name (in whole without the extension or in part) so that the Query Agent can retrieve the proper context
+
+## Using demo console app
+As part of the `azd up`, the local.settings.json file for the console app has been updated with all necessary configuraiton items and your identity has been given the needed RBAC roles
+
 
 ### First time run
 When you run the app for the first time, select the `1` option to analyze a new call audio file.\
