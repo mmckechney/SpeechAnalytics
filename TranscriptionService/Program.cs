@@ -7,17 +7,17 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SpeechAnalyticsLibrary;
 using SpeechAnalyticsLibrary.Models;
+using SpeechAnalytics.ServiceDefaults;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddAppServiceDefaults();
 
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
     .AddJsonFile("local.settings.json", optional: true, reloadOnChange: false)
     .AddEnvironmentVariables();
-
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
 
 builder.Services.AddSingleton<AnalyticsSettings>(sp =>
 {
@@ -36,6 +36,8 @@ builder.Services.AddSingleton<TranscriptionProcessor>();
 builder.Services.AddHttpClient();
 
 var app = builder.Build();
+
+app.MapAppDefaultEndpoints();
 
 app.MapPost("/events", async (HttpRequest request, TranscriptionProcessor processor, ILoggerFactory loggerFactory) =>
 {

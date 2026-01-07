@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\SpeechAnalyticsLibrary\SpeechAnalyticsLibrary.csproj" />
+    <ProjectReference Include="..\SpeechAnalytics.ServiceDefaults\SpeechAnalytics.ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>

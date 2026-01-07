@@ -4,8 +4,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SpeechAnalyticsLibrary;
 using SpeechAnalyticsLibrary.Models;
+using SpeechAnalytics.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddAppServiceDefaults();
 
 
 builder.Configuration
@@ -20,9 +23,6 @@ builder.Services.AddSingleton<AnalyticsSettings>(sp =>
     return settings;
 });
 
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-
 builder.Services.AddSingleton<IdentityHelper>();
 builder.Services.AddSingleton<FileHandling>();
 builder.Services.AddSingleton<CosmosHelper>();
@@ -33,6 +33,8 @@ builder.Services.AddHttpClient();
 builder.Services.AddRouting();
 
 var app = builder.Build();
+
+app.MapAppDefaultEndpoints();
 
 var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("AskInsightsService");
 var agentClient = app.Services.GetRequiredService<FoundryAgentClient>();

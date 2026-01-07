@@ -17,6 +17,9 @@ param embeddingDeploymentName string
 param askContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 param transcriptionContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
+@description('Deploy Aspire dashboard container apps')
+param enableAspireDashboard bool = true
+
 param firstProvision bool = true
 
 var containerEnvironmentName = '${containerAppName}-env'
@@ -142,6 +145,7 @@ module containerApps 'containerapps.bicep' = {
         mangedIdentityClientId: managedIdentity.outputs.clientId
         foundryResourceId: aiFoundry.outputs.foundryResourceId
         foundryResourceName: aiFoundry.outputs.foundryResourceName
+        enableAspireDashboard: enableAspireDashboard
     }
     dependsOn: [
         permissionsacr
