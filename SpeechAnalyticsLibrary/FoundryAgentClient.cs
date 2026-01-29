@@ -215,13 +215,13 @@ namespace SpeechAnalyticsLibrary
                 {
                     if (a.Name == agentName)
                     {
-                        _agentCache[instructionKey] = _projectClient.GetAIAgent(agentName, []);
+                        _agentCache[instructionKey] = await _projectClient.GetAIAgentAsync(agentName, [], cancellationToken: cancellationToken);
                         return _agentCache[instructionKey];
                     }
                 }
 
                 //Otherwise, create it
-                AIAgent aIAgent = _projectClient.CreateAIAgent(
+                AIAgent aIAgent = await _projectClient.CreateAIAgentAsync(
                    name: agentName,
                    model: _settings.ModelDeploymentName,
                    instructions: instructions,

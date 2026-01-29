@@ -21,19 +21,19 @@
       <PackageReference Include="Azure.AI.VoiceLive" Version="1.0.0" />
       <PackageReference Include="Azure.AI.Projects" Version="1.2.0-beta.5" />
       <PackageReference Include="Azure.Identity" Version="1.17.1" />
-      <PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
-      <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.56.0" />
+      <PackageReference Include="Azure.Storage.Blobs" Version="12.27.0" />
+      <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.57.0" />
       <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.47.0" />
-      <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.1" />
+      <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.2" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.2" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.2" />
+      <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.2" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.2" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-	   <PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.251219.1" />
-	   <PackageReference Include="Microsoft.Extensions.AI" Version="10.1.1" />
-	   <PackageReference Include="Microsoft.Agents.AI.AzureAI" Version="1.0.0-preview.251219.1" />
+	   <PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.260128.1" />
+	   <PackageReference Include="Microsoft.Extensions.AI" Version="10.2.0" />
+	   <PackageReference Include="Microsoft.Agents.AI.AzureAI" Version="1.0.0-preview.260128.1" />
    </ItemGroup>
 
 </Project>
