@@ -6,13 +6,12 @@ using System.Text.Json;
 using System.Threading;
 using Azure;
 using Azure.AI.Projects;
-using Azure.AI.Projects.OpenAI;
 using Azure.Identity;
-using Microsoft.Extensions.Logging;
-using OpenAI.Responses;
-using SpeechAnalyticsLibrary.Models;
 using Microsoft.Agents.AI;
+using Microsoft.Agents.AI.Foundry;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
+using SpeechAnalyticsLibrary.Models;
 
 #pragma warning disable OPENAI001 // OpenAI SDK preview constructs required by Azure Agent Framework preview
 namespace SpeechAnalyticsLibrary
@@ -161,29 +160,22 @@ namespace SpeechAnalyticsLibrary
 
         private async Task<string> ExecuteAgentAsync(string instructionKey, string userInput, CancellationToken cancellationToken)
         {
-            var agentVersion = await EnsureAgentVersionAsync(instructionKey, cancellationToken);
-            var responseClient = _projectClient.OpenAI.GetProjectResponsesClientForAgent(agentVersion.Name);
+            var agent = await EnsureAgentVersionAsync(instructionKey, cancellationToken);
 
-            CreateResponseOptions options = new()
+            var messages = new List<ChatMessage>
             {
-                InputItems =
-            {
-               ResponseItem.CreateUserMessageItem(userInput ?? string.Empty)
-            }
+                new(ChatRole.User, userInput ?? string.Empty)
             };
 
-            ResponseResult response = await responseClient.CreateResponseAsync(options, cancellationToken);
-            if (response.Status != ResponseStatus.Completed)
-            {
-                if (response.Error != null)
-                {
-                    _log.LogError("Agent {Agent} returned error: {Code} - {Message}", agentVersion.Name, response.Error.Code, response.Error.Message);
-                    throw new InvalidOperationException(response.Error.Message ?? "Agent response returned an error.");
-                }
-                throw new InvalidOperationException($"Agent {agentVersion.Name} returned status {response.Status}.");
-            }
+            var response = await agent.RunAsync(messages, session: null, options: null, cancellationToken: cancellationToken);
 
-            return response.GetOutputText();
+            var outputText = response.Messages?
+                .Where(m => m.Role == ChatRole.Assistant)
+                .SelectMany(m => m.Contents.OfType<TextContent>())
+                .Select(tc => tc.Text)
+                .LastOrDefault();
+
+            return outputText ?? string.Empty;
         }
 
         private async Task<AIAgent> EnsureAgentVersionAsync(string instructionKey, CancellationToken cancellationToken)
@@ -210,27 +202,14 @@ namespace SpeechAnalyticsLibrary
                    ? configuredName
                    : instructionKey.Replace('.', '-');
 
-                //Use the existing agent if available
-                await foreach (var a in _projectClient.Agents.GetAgentsAsync())
-                {
-                    if (a.Name == agentName)
-                    {
-                        _agentCache[instructionKey] = await _projectClient.GetAIAgentAsync(name: agentName, cancellationToken: cancellationToken);
-                        return _agentCache[instructionKey];
-                    }
-                }
+                var agent = _projectClient.AsAIAgent(
+                    model: _settings.ModelDeploymentName,
+                    instructions: instructions,
+                    name: agentName,
+                    description: agentName);
 
-                //Otherwise, create it
-                AIAgent aIAgent = await _projectClient.CreateAIAgentAsync(
-                   name: agentName,
-                   model: _settings.ModelDeploymentName,
-                   instructions: instructions,
-                   tools: [],
-                   cancellationToken: cancellationToken);
-
-                _agentCache[instructionKey] = aIAgent;
-
-                return aIAgent;
+                _agentCache[instructionKey] = agent;
+                return agent;
             }
             finally
             {
