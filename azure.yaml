@@ -16,6 +16,7 @@ services:
       context: ..
       dockerfile: AskInsightsService/Dockerfile
       image: ${AZD_SERVICE_ASKINSIGHTS_IMAGE}
+      remoteBuild: true
 
   transcription:
     project: TranscriptionService
@@ -29,6 +30,7 @@ services:
       context: ..
       dockerfile: TranscriptionService/Dockerfile
       image: ${AZD_SERVICE_TRANSCRIPTION_IMAGE}
+      remoteBuild: true
       
    
 infra:
