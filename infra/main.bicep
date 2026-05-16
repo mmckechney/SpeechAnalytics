@@ -137,7 +137,7 @@ module containerApps 'containerapps.bicep' = {
         cosmosDatabaseName: cosmosDB.outputs.cosmosDataBaseName
         cosmosContainerName: cosmosDB.outputs.cosmosContainerName
         appInsightsConnectionString : appInsights.outputs.connectionString
-        usePlaceholderImage : firstProvision
+        usePlaceholderImage : true
         managedIdentityResourceId: managedIdentity.outputs.id
         foundryProjectEndpoint: aiFoundry.outputs.aiFoundryProjectEndpoint
         chatModelDeploymentName: chatDeploymentName
